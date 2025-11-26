@@ -8,8 +8,6 @@ class HomeController extends Controller
 {
     /**
      * Create a new controller instance.
-     *
-     * @return void
      */
     public function __construct()
     {
@@ -18,11 +16,14 @@ class HomeController extends Controller
 
     /**
      * Show the application dashboard.
-     *
-     * @return \Illuminate\Contracts\Support\Renderable
      */
     public function index()
     {
-        return view('home');
+        // Data dummy — bisa kamu ambil dari database nanti
+        $jumlah_mk   = 24;
+        $kelas_aktif = 12;
+        $jumlah_sk   = 1;
+
+        return view('home', compact('jumlah_mk', 'kelas_aktif', 'jumlah_sk'));
     }
 }
