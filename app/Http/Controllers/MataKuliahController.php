@@ -12,9 +12,7 @@ class MataKuliahController extends Controller
      */
     public function index()
     {
-        // ambil semua data matakuliah
         $matakuliah = MataKuliah::all();
-
         return view('matakuliah.index', compact('matakuliah'));
     }
 
@@ -31,67 +29,55 @@ class MataKuliahController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
-            'kode_mk' => 'required|unique:matakuliah',
-            'nama_mk' => 'required',
-            'sks' => 'required|numeric',
-            'semester' => 'required|numeric'
+            'kode_mk'   => 'required|unique:matakuliah',
+            'nama_mk'   => 'required',
+            'sks'       => 'required|numeric',
+            'semester'  => 'required|numeric',
+            'status'    => 'required'
         ]);
 
-        MataKuliah::create([
-            'kode_mk' => $request->kode_mk,
-            'nama_mk' => $request->nama_mk,
-            'sks' => $request->sks,
-            'semester' => $request->semester,
-        ]);
+        MataKuliah::create($request->all());
 
-        return redirect()->route('matakuliah.index')->with('success', 'Data berhasil ditambahkan!');
+        return redirect()->route('matakuliah.index')
+            ->with('success', 'Data berhasil ditambahkan!');
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit(MataKuliah $matakuliah)
     {
-        $matakuliah = MataKuliah::findOrFail($id);
-
         return view('matakuliah.edit', compact('matakuliah'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, MataKuliah $matakuliah)
     {
-        $matakuliah = MataKuliah::findOrFail($id);
-
-        // Validasi input
         $request->validate([
-            'kode_mk' => 'required|unique:matakuliah,kode_mk,' . $matakuliah->id,
-            'nama_mk' => 'required',
-            'sks' => 'required|numeric',
-            'semester' => 'required|numeric'
+            'kode_mk'   => 'required|unique:matakuliah,kode_mk,' . $matakuliah->id,
+            'nama_mk'   => 'required',
+            'sks'       => 'required|numeric',
+            'semester'  => 'required|numeric',
+            'status'    => 'required'
         ]);
 
-        $matakuliah->update([
-            'kode_mk' => $request->kode_mk,
-            'nama_mk' => $request->nama_mk,
-            'sks' => $request->sks,
-            'semester' => $request->semester,
-        ]);
+        $matakuliah->update($request->all());
 
-        return redirect()->route('matakuliah.index')->with('success', 'Data berhasil diperbarui!');
+        return redirect()->route('matakuliah.index')
+            ->with('success', 'Data berhasil diperbarui!');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(MataKuliah $matakuliah)
     {
-        $matakuliah = MataKuliah::findOrFail($id);
         $matakuliah->delete();
 
-        return redirect()->route('matakuliah.index')->with('success', 'Data berhasil dihapus!');
+        return redirect()->route('matakuliah.index')
+            ->with('success', 'Data berhasil dihapus!');
     }
 }
