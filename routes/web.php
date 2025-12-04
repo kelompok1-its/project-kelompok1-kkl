@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MataKuliahController;
+use App\Http\Controllers\RoleSwitchController;
 
 // =============================
 // Halaman login default
@@ -20,25 +21,41 @@ Route::get('/', function () {
 Auth::routes();
 
 // =============================
-// Home setelah login
+// Protected routes (requires authentication)
 // =============================
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::middleware(['auth'])->group(function () {
 
-// =============================
-// Dashboard
-// =============================
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->name('dashboard');
+    // Home setelah login
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+    // Dashboard umum
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Dashboard per role
+    Route::get('/dashboard/{role}', [DashboardController::class, 'showByRole'])
+        ->name('dashboard.role');
+
+    // CRUD Mata Kuliah
+    Route::resource('matakuliah', MataKuliahController::class);
+
+    // ===== Role switcher =====
+    // POST endpoint (CSRF-safe) -> dinamai role.switch
+    Route::post('/switch-role', [RoleSwitchController::class, 'switch'])
+        ->name('role.switch');
+
+    // Optional: compatibility GET route WITH DIFFERENT NAME
+    // If you don't need the GET variant, you can remove this line.
+    Route::get('/switch-role/{role}', [RoleSwitchController::class, 'switch'])
+        ->name('role.switch.get');
+
+    // Optional: debug current role
+    Route::get('/current-role', function () {
+        return response()->json([
+            'slug' => session('current_role_slug', 'akademik'),
+            'label' => session('current_role', 'Akademik'),
+        ]);
+    })->name('role.current');
+});
 // =============================
-// CRUD Mata Kuliah
+// End protected routes
 // =============================
-// otomatis membuat:
-// GET     /matakuliah           → index
-// GET     /matakuliah/create    → create
-// POST    /matakuliah           → store
-// GET     /matakuliah/{id}/edit → edit
-// PUT     /matakuliah/{id}      → update
-// DELETE  /matakuliah/{id}      → destroy
-// =============================
-Route::resource('matakuliah', MataKuliahController::class);
