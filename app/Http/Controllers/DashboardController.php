@@ -7,26 +7,22 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     /**
-     * General dashboard (default).
+     * Index: jika ada session role -> redirect ke dashboard.role
+     * jika tidak ada -> tampilkan dashboard umum
      */
     public function index()
     {
-        $data = $this->commonData();
-
-        // Jika session punya role, tunjukkan dashboard role tersebut
         $role = session('current_role_slug', null);
+
         if ($role) {
-            return $this->showByRole(request(), $role);
+            // redirect ke route dashboard.role misal /dashboard/akademik
+            return redirect()->route('dashboard.role', ['role' => $role]);
         }
 
+        $data = $this->commonData();
         return view('dashboard.index', $data);
     }
 
-    /**
-     * Show dashboard for a specific role.
-     * Will attempt to render view "{role}.dashboard" (e.g. "akademik.dashboard").
-     * If view missing, fallback to "dashboard.index".
-     */
     public function showByRole(Request $request, $role)
     {
         $allowed = [
@@ -38,12 +34,8 @@ class DashboardController extends Controller
         ];
 
         $role = strtolower($role);
+        if (! array_key_exists($role, $allowed)) abort(404);
 
-        if (! array_key_exists($role, $allowed)) {
-            abort(404);
-        }
-
-        // set session supaya UI tahu role aktif
         session([
             'current_role' => $allowed[$role],
             'current_role_slug' => $role,
@@ -53,18 +45,14 @@ class DashboardController extends Controller
         $data['current_role_slug'] = $role;
         $data['current_role_label'] = $allowed[$role];
 
-        // cek view di path "{role}.dashboard"
         $viewName = "{$role}.dashboard";
-        if (! view()->exists($viewName)) {
-            $viewName = 'dashboard.index';
-        }
+        if (! view()->exists($viewName)) $viewName = 'dashboard.index';
 
         return view($viewName, $data);
     }
 
     private function commonData()
     {
-        // ambil data nyata dari DB jika ada; ini contoh dummy
         return [
             'jumlah_mk' => 24,
             'kelas_aktif' => 12,

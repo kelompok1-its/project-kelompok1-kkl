@@ -1,7 +1,22 @@
 <div class="header-bar" style="position:relative;">
     <div class="header-bar-inner" style="position:relative;">
         <div class="header-bar">
-            Dashboard Pengelolaan Mata Kuliah & Ploting Dosen
+            @php
+            $role = session('current_role_slug', 'akademik');
+            $roleLabel = session('current_role', 'Akademik');
+
+            $dashboardTitles = [
+            'akademik' => 'Dashboard Pengelolaan Mata Kuliah & Ploting Dosen',
+            'kaprodi' => 'Dashboard Kaprodi - Kuisioner & Ploting',
+            'dekan' => 'Dashboard Dekan - Verifikasi & Approval',
+            'wr1' => 'Dashboard Wakil Rektor I - Final Approval',
+            'dosen' => 'Dashboard Dosen - Kuisioner & Jadwal'
+            ];
+
+            $currentTitle = $dashboardTitles[$role] ?? 'Dashboard Pengelolaan Mata Kuliah & Ploting Dosen';
+            @endphp
+
+            {{ $currentTitle }}
 
             <!-- profile icon on the right inside the same header-bar -->
             <button class="profile-icon" id="profileBtn" aria-haspopup="true" aria-expanded="false" title="Profile / Ganti Aktor">

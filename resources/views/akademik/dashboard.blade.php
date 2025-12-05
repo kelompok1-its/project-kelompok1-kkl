@@ -3,27 +3,32 @@
 @section('content')
 @include('partials.role_dropdown')
 
-<div class="content-area">
-    <p style="margin-top:12px;">Halo Akademik — Anda dapat mengelola kurikulum, input MK, dan generate SK di halaman ini.</p>
+<div class="content-area" style="margin-top:18px;">
+    <!-- Spacer (jarak dari header) -->
+    <div style="height:6px"></div>
 
-    <div class="stats" style="margin-top:18px;">
-        <div class="card-stat">
+    <!-- Statistik (tiga kartu) -->
+    <div class="stats-row" aria-hidden="false">
+        <div class="stat-card" role="region" aria-label="Jumlah Mata Kuliah">
             <h3>Jumlah Mata Kuliah</h3>
-            <p>{{ $jumlah_mk }}</p>
+            <p>{{ $jumlah_mk ?? 24 }}</p>
         </div>
-        <div class="card-stat">
+
+        <div class="stat-card" role="region" aria-label="Kelas Aktif">
             <h3>Kelas Aktif</h3>
-            <p>{{ $kelas_aktif }}</p>
+            <p>{{ $kelas_aktif ?? 12 }}</p>
         </div>
-        <div class="card-stat">
+
+        <div class="stat-card" role="region" aria-label="Surat Keputusan">
             <h3>Surat Keputusan</h3>
-            <p>{{ $jumlah_sk }}</p>
+            <p>{{ $jumlah_sk ?? 1 }}</p>
         </div>
     </div>
 
-    <div class="notif-box" style="margin-top:22px;">
+    <!-- Notifikasi / Aktivitas Akademik -->
+    <div class="notif-box" style="margin-top:26px;">
         <h3>Aktivitas Akademik</h3>
-        <ul>
+        <ul style="margin:10px 0 0 18px; color:#374151;">
             <li>👨‍🏫 Update kurikulum</li>
             <li>📝 Input mata kuliah baru</li>
             <li>📄 Generate SK mengajar setelah WR1 menyetujui</li>

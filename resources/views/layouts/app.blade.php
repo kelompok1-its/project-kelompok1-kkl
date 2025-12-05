@@ -243,7 +243,7 @@
             <nav>
                 <a href="{{ route('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a>
                 <a href="{{ route('matakuliah.index') }}"><i class="bi bi-book"></i> Data Mata Kuliah</a>
-                <a href="#"><i class="bi bi-people"></i> Jumlah Kelas</a>
+                <a href="{{ route('kelas.index') }}"><i class="bi bi-people"></i> Jumlah Kelas</a>
                 <a href="#"><i class="bi bi-journal-text"></i> SK Mengajar</a>
                 <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="bi bi-box-arrow-right"></i> Logout
