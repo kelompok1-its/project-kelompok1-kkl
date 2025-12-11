@@ -11,11 +11,16 @@ class Matakuliah extends Model
 
     protected $table = 'matakuliah';
 
+    // Mass assignable fields
     protected $fillable = [
         'kode_mk',
         'nama_mk',
         'sks',
-        'semester',
+        'kelas',
+        'kurikulum',
+        'fakultas',
+        'prodi',
+        'kode_prodi',
         'status'
     ];
 }
