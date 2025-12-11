@@ -239,12 +239,46 @@
 <body>
     <div class="app-shell">
         <aside class="sidebar">
-            <h4>SIAKAD - Akademik</h4>
+            <h4>SIAKAD - Mandala</h4>
             <nav>
                 <a href="{{ route('dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+
+                @php
+                $role = session('current_role_slug', 'akademik');
+                @endphp
+
+                @if($role === 'akademik')
+                {{-- Menu Akademik (Read-only SK) --}}
                 <a href="{{ route('matakuliah.index') }}"><i class="bi bi-book"></i> Data Mata Kuliah</a>
                 <a href="{{ route('kelas.index') }}"><i class="bi bi-people"></i> Jumlah Kelas</a>
-                <a href="#"><i class="bi bi-journal-text"></i> SK Mengajar</a>
+                <a href="{{ route('sk_mengajar.index') }}"><i class="bi bi-journal-text"></i> Lihat SK</a>
+
+                @elseif($role === 'kaprodi')
+                {{-- Menu Kaprodi --}}
+                <a href="#"><i class="bi bi-clipboard-check"></i> Kuisioner Dosen</a>
+                <a href="#"><i class="bi bi-diagram-3"></i> Ploting Dosen</a>
+                <a href="{{ route('matakuliah.index') }}"><i class="bi bi-book"></i> Data MK</a>
+
+                @elseif($role === 'dekan')
+                {{-- Menu Dekan --}}
+                <a href="#"><i class="bi bi-check-circle"></i> Verifikasi Ploting</a>
+                <a href="#"><i class="bi bi-clipboard-check"></i> Approval</a>
+                <a href="#"><i class="bi bi-file-earmark-text"></i> Laporan</a>
+
+                @elseif($role === 'wr1')
+                {{-- Menu WR1 (Full Access SK) --}}
+                <a href="{{ route('sk_mengajar.index') }}"><i class="bi bi-pen"></i> Kelola SK</a>
+                <a href="#"><i class="bi bi-shield-check"></i> Final Approval</a>
+                <a href="#"><i class="bi bi-file-earmark-pdf"></i> Publikasi</a>
+
+                @elseif($role === 'dosen')
+                {{-- Menu Dosen --}}
+                <a href="#"><i class="bi bi-card-checklist"></i> Isi Kuisioner</a>
+                <a href="#"><i class="bi bi-calendar-check"></i> Jadwal Mengajar</a>
+                <a href="{{ route('sk_mengajar.index') }}"><i class="bi bi-file-earmark-pdf"></i> SK Saya</a>
+
+                @endif
+
                 <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </a>
@@ -254,22 +288,26 @@
 
         <main class="main">
             <div class="content-inner">
+
+                @include('layouts.header') {{-- ← TOP BAR BERADA DI SINI --}}
+
                 @yield('content')
+
             </div>
         </main>
-    </div>
 
-    <script>
-        // Click outside handler for dropdown (global)
-        document.addEventListener('click', function(e) {
-            const dd = document.querySelector('.profile-dropdown');
-            const btn = document.querySelector('.profile-icon');
-            if (!dd || !btn) return;
-            if (!btn.contains(e.target) && !dd.contains(e.target)) {
-                dd.classList.remove('show');
-            }
-        });
-    </script>
+
+        <script>
+            // Click outside handler for dropdown (global)
+            document.addEventListener('click', function(e) {
+                const dd = document.querySelector('.profile-dropdown');
+                const btn = document.querySelector('.profile-icon');
+                if (!dd || !btn) return;
+                if (!btn.contains(e.target) && !dd.contains(e.target)) {
+                    dd.classList.remove('show');
+                }
+            });
+        </script>
 </body>
 
 </html>

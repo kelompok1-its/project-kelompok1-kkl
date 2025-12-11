@@ -24,5 +24,6 @@ class Kelas extends Model
     protected $casts = [
         'jumlah_kelas' => 'integer',
         'kapasitas' => 'integer',
+        'nama_kelas'
     ];
 }

@@ -2,82 +2,88 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MataKuliah;
+use App\Models\Matakuliah;
 use Illuminate\Http\Request;
 
-class MataKuliahController extends Controller
+class MatakuliahController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Tampilkan list mata kuliah.
      */
     public function index()
     {
-        $matakuliah = MataKuliah::all();
-        return view('matakuliah.index', compact('matakuliah'));
+        $matakuliah = Matakuliah::orderBy('kode_mk')->get();
+
+        return view('akademik.matakuliah.index', compact('matakuliah'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Form tambah.
      */
     public function create()
     {
-        return view('matakuliah.create');
+        return view('akademik.matakuliah.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Simpan MK baru.
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'kode_mk'   => 'required|unique:matakuliah',
-            'nama_mk'   => 'required',
-            'sks'       => 'required|numeric',
-            'semester'  => 'required|numeric',
-            'status'    => 'required'
+        $validated = $request->validate([
+            'kode_mk'    => 'required|unique:matakuliah,kode_mk',
+            'nama_mk'    => 'required|string',
+            'sks'        => 'required|numeric|min:1',
+            'kelas'      => 'required|string',
+            'kurikulum'  => 'required|string',
+            'fakultas'   => 'required|string',
+            'prodi'      => 'required|string',
+            'kode_prodi' => 'required|string',
+            'status'     => 'required|string',
         ]);
 
-        MataKuliah::create($request->all());
+        Matakuliah::create($validated);
 
-        return redirect()->route('matakuliah.index')
-            ->with('success', 'Data berhasil ditambahkan!');
+        return redirect()->route('matakuliah.index')->with('success', 'Mata kuliah berhasil ditambahkan!');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Halaman edit MK.
      */
-    public function edit(MataKuliah $matakuliah)
+    public function edit(Matakuliah $matakuliah)
     {
-        return view('matakuliah.edit', compact('matakuliah'));
+        return view('akademik.matakuliah.edit', compact('matakuliah'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update MK.
      */
-    public function update(Request $request, MataKuliah $matakuliah)
+    public function update(Request $request, Matakuliah $matakuliah)
     {
-        $request->validate([
-            'kode_mk'   => 'required|unique:matakuliah,kode_mk,' . $matakuliah->id,
-            'nama_mk'   => 'required',
-            'sks'       => 'required|numeric',
-            'semester'  => 'required|numeric',
-            'status'    => 'required'
+        $validated = $request->validate([
+            'kode_mk'    => 'required|unique:matakuliah,kode_mk,' . $matakuliah->id,
+            'nama_mk'    => 'required|string',
+            'sks'        => 'required|numeric|min:1',
+            'kelas'      => 'required|string',
+            'kurikulum'  => 'required|string',
+            'fakultas'   => 'required|string',
+            'prodi'      => 'required|string',
+            'kode_prodi' => 'required|string',
+            'status'     => 'required|string',
         ]);
 
-        $matakuliah->update($request->all());
+        $matakuliah->update($validated);
 
-        return redirect()->route('matakuliah.index')
-            ->with('success', 'Data berhasil diperbarui!');
+        return redirect()->route('matakuliah.index')->with('success', 'Data mata kuliah berhasil diperbarui!');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Hapus MK.
      */
-    public function destroy(MataKuliah $matakuliah)
+    public function destroy(Matakuliah $matakuliah)
     {
         $matakuliah->delete();
 
-        return redirect()->route('matakuliah.index')
-            ->with('success', 'Data berhasil dihapus!');
+        return redirect()->route('matakuliah.index')->with('success', 'Mata kuliah berhasil dihapus!');
     }
 }

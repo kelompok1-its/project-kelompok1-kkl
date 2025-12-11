@@ -3,85 +3,22 @@
 @section('content')
 <div class="container-fluid">
 
-    {{-- TITLE --}}
-    <div class="text-center mb-4">
-        <h3 class="fw-bold p-3 rounded" style="background:#d8e2d2;">
-            Data Mata Kuliah – Akademik
-        </h3>
-    </div>
-
-    {{-- FORM TAMBAH DATA --}}
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <label class="fw-bold">Tahun</label>
-                    <select class="form-select">
-                        <option value="">Kurikulum</option>
-                        <option value="2023">2023</option>
-                        <option value="2024">2024</option>
-                    </select>
-                </div>
-            </div>
-
-            <hr>
-
-            <h5 class="fw-bold mb-3">Tambah Data Mata Kuliah</h5>
-
-            <form action="{{ route('matakuliah.store') }}" method="POST">
-                @csrf
-                <div class="row g-3">
-
-                    <div class="col-md-3">
-                        <label>Kode MK</label>
-                        <input type="text" name="kode_mk" class="form-control"
-                               placeholder="Misal: IF101" required>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label>Nama Mata Kuliah</label>
-                        <input type="text" name="nama_mk" class="form-control"
-                               placeholder="Misal: Algoritma dan Pemrograman" required>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label>SKS</label>
-                        <input type="number" name="sks" class="form-control"
-                               placeholder="3" required>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label>Semester</label>
-                        <select name="semester" class="form-select" required>
-                            <option value="">Pilih Semester</option>
-                            @for ($i = 1; $i <= 8; $i++)
-                                <option value="{{ $i }}">{{ $i }}</option>
-                            @endfor
-                        </select>
-                    </div>
-
-                    <div class="col-md-1">
-                        <label>Status</label>
-                        <select name="status" class="form-select">
-                            <option value="Aktif">Aktif</option>
-                            <option value="Tidak Aktif">Tidak Aktif</option>
-                        </select>
-                    </div>
-
-                    <div class="col-12 mt-3">
-                        <button class="btn w-100" style="background:#7cae7a; color:white;">
-                            Simpan Mata Kuliah
-                        </button>
-                    </div>
-
-                </div>
-            </form>
+    {{-- HEADER --}}
+    <div class="d-flex justify-content-between align-items-start mb-4" style="margin-top:12px;">
+        <div>
+            <h2 class="fw-bold mb-2" style="color:#1b5c2e;">Manajemen Mata Kuliah</h2>
+            <p class="text-muted mb-0" style="font-size:14px;">Kelola data mata kuliah untuk keperluan akademik</p>
         </div>
+
+        <a href="{{ route('matakuliah.create') }}"
+            class="btn px-4 py-2 rounded-pill shadow-sm"
+            style="background: linear-gradient(135deg, #2d604a 0%, #1b5c2e 100%); border:none; color:white; font-weight:600;">
+            <i class="bi bi-plus-circle me-2"></i>Tambah Mata Kuliah
+        </a>
     </div>
 
 
-    {{-- TABLE DATA MATA KULIAH --}}
+    {{-- TABLE DATA --}}
     <div class="card shadow-sm">
         <div class="card-body">
 
@@ -90,8 +27,9 @@
             </h5>
 
             {{-- SEARCH + VOICE --}}
-            <div class="input-group mb-3">
-                <input type="text" id="searchInput" class="form-control" placeholder="Cari mata kuliah...">
+            <div class="input-group mb-3" style="max-width: 400px;">
+                <input type="text" id="searchInput" class="form-control" placeholder="Cari mata kuliah..." autocomplete="off">
+
                 <button class="btn btn-outline-secondary" type="button" id="voiceBtn">
                     <i class="bi bi-mic-fill" style="font-size:1.2rem;"></i>
                 </button>
@@ -104,7 +42,9 @@
                         <th>Kode</th>
                         <th>Nama Mata Kuliah</th>
                         <th>SKS</th>
-                        <th>Semester</th>
+                        <th>Kelas</th>
+                        <th>Fakultas</th>
+                        <th>Prodi</th>
                         <th>Status</th>
                         <th style="width: 120px;">Aksi</th>
                     </tr>
@@ -116,25 +56,30 @@
                         <td>{{ $mk->kode_mk }}</td>
                         <td>{{ $mk->nama_mk }}</td>
                         <td>{{ $mk->sks }}</td>
-                        <td>{{ $mk->semester }}</td>
+                        <td>{{ $mk->kelas }}</td>
+                        <td>{{ $mk->fakultas }}</td>
+                        <td>{{ $mk->prodi }}</td>
                         <td class="fw-bold" style="color: green;">{{ $mk->status }}</td>
 
                         <td>
                             <a href="{{ route('matakuliah.edit', $mk->id) }}"
-                               class="btn btn-success btn-sm">Edit</a>
+                                class="btn btn-success btn-sm">Edit</a>
 
                             <form action="{{ route('matakuliah.destroy', $mk->id) }}"
-                                  method="POST" class="d-inline">
+                                method="POST" class="d-inline">
                                 @csrf
                                 @method('DELETE')
                                 <button onclick="return confirm('Hapus Mata Kuliah?')"
-                                        class="btn btn-danger btn-sm">Hapus</button>
+                                    class="btn btn-danger btn-sm">Hapus</button>
                             </form>
                         </td>
                     </tr>
+
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted">Belum ada data mata kuliah.</td>
+                        <td colspan="8" class="text-center text-muted">
+                            Belum ada data mata kuliah.
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -149,9 +94,8 @@
 
 </div>
 
-
 {{-- =====================================================
-    SCRIPT : Voice Search + Filter + Alert
+     SCRIPT : Voice Search + Filter
 ===================================================== --}}
 <script>
     const searchInput = document.getElementById("searchInput");
@@ -163,6 +107,7 @@
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = "id-ID";
+        recognition.continuous = false;
 
         voiceBtn.onclick = () => {
             recognition.start();
@@ -173,6 +118,10 @@
             const text = event.results[0][0].transcript;
             searchInput.value = text;
             filterTable();
+        };
+
+        recognition.onerror = () => {
+            alert("Gagal mengenali suara. Coba lagi.");
         };
 
         recognition.onend = () => {
@@ -197,7 +146,6 @@
             if (match) visibleCount++;
         });
 
-        // Show or hide alert
         noResultAlert.style.display = (visibleCount === 0) ? "block" : "none";
     }
 </script>

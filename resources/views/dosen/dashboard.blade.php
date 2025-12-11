@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-@include('partials.role_dropdown')
 
 <div class="content-wrapper">
     <div class="header-title">Dashboard Dosen</div>

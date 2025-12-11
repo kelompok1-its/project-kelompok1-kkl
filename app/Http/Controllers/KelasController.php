@@ -2,104 +2,64 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Matakuliah;
 use Illuminate\Http\Request;
-use App\Models\Kelas;
 
 class KelasController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     * Also show the total count (Jumlah Kelas).
+     * Menampilkan daftar kelas (data dari tabel matakuliah)
      */
     public function index(Request $request)
     {
-        $query = Kelas::query();
+        $search = $request->search;
 
-        if ($search = $request->query('q')) {
-            $query->where('nama', 'like', "%{$search}%")
-                ->orWhere('kode', 'like', "%{$search}%");
-        }
+        $kelas = Matakuliah::when($search, function ($q) use ($search) {
+            $q->where('kelas', 'like', "%$search%")
+                ->orWhere('kode_mk', 'like', "%$search%")
+                ->orWhere('nama_mk', 'like', "%$search%");
+        })
+            ->orderBy('kode_mk', 'asc')
+            ->paginate(10)
+            ->withQueryString();
 
-        $kelas = $query->orderBy('nama')->paginate(12)->withQueryString();
-
-        $data = [
-            'jumlah_kelas' => Kelas::count(),
-            'kelas' => $kelas,
-        ];
-
-        return view('kelas.index', $data);
+        return view('akademik.kelas.index', compact('kelas', 'search'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Form Edit Kelas
      */
-    public function create()
+    public function edit($id)
     {
-        return view('kelas.create');
+        $kelas = Matakuliah::findOrFail($id);
+        return view('akademik.kelas.edit', compact('kelas'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Update data kelas
      */
-    public function store(Request $request)
+    public function update(Request $request, $id)
     {
-        $data = $request->validate([
-            'kode' => 'required|string|max:50',
-            'nama' => 'required|string|max:255',
-            'jumlah_kelas' => 'required|integer|min:1',
-            'nama_kelas' => 'required|string',
-            'kapasitas' => 'required|integer|min:1',
-            'semester' => 'nullable|string|max:50',
-            'keterangan' => 'nullable|string',
+        $request->validate([
+            'kelas' => 'required|string',
         ]);
 
-        Kelas::create($data);
+        $kelas = Matakuliah::findOrFail($id);
 
-        return redirect()->route('kelas.index')->with('success', 'Kelas berhasil ditambahkan.');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Kelas $kelas)
-    {
-        return view('kelas.show', compact('kelas'));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Kelas $kelas)
-    {
-        return view('kelas.edit', compact('kelas'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Kelas $kelas)
-    {
-        $data = $request->validate([
-            'kode' => 'required|string|max:50',
-            'nama' => 'required|string|max:255',
-            'jumlah_kelas' => 'required|integer|min:1',
-            'nama_kelas' => 'required|string',
-            'kapasitas' => 'required|integer|min:1',
-            'semester' => 'nullable|string|max:50',
-            'keterangan' => 'nullable|string',
+        $kelas->update([
+            'kelas' => $request->kelas,
         ]);
 
-        $kelas->update($data);
-
-        return redirect()->route('kelas.index')->with('success', 'Kelas berhasil diperbarui.');
+        return redirect()->route('kelas.index')->with('success', 'Kelas berhasil diperbarui!');
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Hapus kelas
      */
-    public function destroy(Kelas $kelas)
+    public function destroy($id)
     {
-        $kelas->delete();
-        return redirect()->route('kelas.index')->with('success', 'Kelas berhasil dihapus.');
+        Matakuliah::findOrFail($id)->delete();
+
+        return redirect()->route('kelas.index')->with('success', 'Data kelas berhasil dihapus!');
     }
 }

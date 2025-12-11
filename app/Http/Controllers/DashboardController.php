@@ -54,9 +54,9 @@ class DashboardController extends Controller
     private function commonData()
     {
         return [
-            'jumlah_mk' => 24,
-            'kelas_aktif' => 12,
-            'jumlah_sk' => 1,
+            'jumlah_mk' => \App\Models\MataKuliah::count(),
+            'kelas_aktif' => \App\Models\Kelas::count(),
+            'jumlah_sk' => \App\Models\SkMengajar::count(),
         ];
     }
 }
