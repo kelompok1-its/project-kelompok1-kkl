@@ -3,18 +3,19 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
-/* ======================
-   CONTROLLERS
-======================= */
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MataKuliahController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\SkMengajarController;
 use App\Http\Controllers\RoleSwitchController;
 
+// Kuisioner controllers (role-based)
 use App\Http\Controllers\KaprodiKuisionerController;
 use App\Http\Controllers\DosenKuisionerController;
 use App\Http\Controllers\JawabanKuisionerController;
+
+// Ploting controller (Kaprodi)
+use App\Http\Controllers\KaprodiPlotingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,18 +27,13 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-/* ======================
-   AUTH
-======================= */
+// Auth default
 Auth::routes();
 
-/* ======================
-   PROTECTED ROUTES
-======================= */
 Route::middleware(['auth'])->group(function () {
 
     /* ======================
-       HOME
+       HOME REDIRECT
     ======================= */
     Route::get('/home', function () {
         return redirect()->route('dashboard.role', 'akademik');
@@ -78,10 +74,28 @@ Route::middleware(['auth'])->group(function () {
         ->where('role', 'akademik|kaprodi|dekan|wr1|dosen')
         ->name('role.switch.get');
 
-    /* =========================================================
+    /* ======================
+       KAPRODI — PLOTTING DOSEN
+       views/kaprodi/ploting/*
+    ======================= */
+    Route::prefix('kaprodi/ploting')->group(function () {
+        Route::get('/', [KaprodiPlotingController::class, 'index'])
+            ->name('kaprodi.ploting.index');
+
+        Route::get('/create', [KaprodiPlotingController::class, 'create'])
+            ->name('kaprodi.ploting.create');
+
+        Route::post('/store', [KaprodiPlotingController::class, 'store'])
+            ->name('kaprodi.ploting.store');
+
+        Route::delete('/{ploting}', [KaprodiPlotingController::class, 'destroy'])
+            ->name('kaprodi.ploting.destroy');
+    });
+
+    /* ======================
        KUISONER — KAPRODI
        views/kaprodi/kuisioner/*
-    ========================================================= */
+    ======================= */
     Route::prefix('kaprodi/kuisioner')->group(function () {
 
         Route::get('/', [KaprodiKuisionerController::class, 'index'])
@@ -97,10 +111,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('kaprodi.kuisioner.hasil');
     });
 
-    /* =========================================================
+    /* ======================
        KUISONER — DOSEN
        views/dosen/kuisioner/*
-    ========================================================= */
+    ======================= */
     Route::prefix('dosen/kuisioner')->group(function () {
 
         Route::get('/', [DosenKuisionerController::class, 'index'])
