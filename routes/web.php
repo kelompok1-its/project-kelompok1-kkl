@@ -17,6 +17,12 @@ use App\Http\Controllers\JawabanKuisionerController;
 // Ploting controller (Kaprodi)
 use App\Http\Controllers\KaprodiPlotingController;
 
+// Dekan Ploting controller
+use App\Http\Controllers\DekanPlotingController;
+
+// Dekan Approval controller (Approval center)
+use App\Http\Controllers\DekanApprovalController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -91,6 +97,31 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{ploting}', [KaprodiPlotingController::class, 'destroy'])
             ->name('kaprodi.ploting.destroy');
     });
+
+    /* ======================
+       DEKAN — VERIFIKASI PLOTTING
+       views/dekan/ploting/*
+    ======================= */
+    Route::prefix('dekan/ploting')->group(function () {
+        Route::get('/', [DekanPlotingController::class, 'index'])
+            ->name('dekan.ploting.index');
+
+        Route::get('/{ploting}', [DekanPlotingController::class, 'show'])
+            ->name('dekan.ploting.show');
+
+        Route::post('/{ploting}/approve', [DekanPlotingController::class, 'approve'])
+            ->name('dekan.ploting.approve');
+
+        Route::post('/{ploting}/reject', [DekanPlotingController::class, 'reject'])
+            ->name('dekan.ploting.reject');
+    });
+
+    /* ======================
+       DEKAN — APPROVAL CENTER
+       views/dekan/approval/*
+    ======================= */
+    Route::get('dekan/approval', [DekanApprovalController::class, 'index'])
+        ->name('dekan.approval.index');
 
     /* ======================
        KUISONER — KAPRODI

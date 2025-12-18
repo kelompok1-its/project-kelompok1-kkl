@@ -261,8 +261,8 @@
 
                 @elseif($role === 'dekan')
                 {{-- Menu Dekan --}}
-                <a href="#"><i class="bi bi-check-circle"></i> Verifikasi Ploting</a>
-                <a href="#"><i class="bi bi-clipboard-check"></i> Approval</a>
+                <a href="{{ route('dekan.ploting.index') }}"><i class="bi bi-check-circle"></i> <span>Verifikasi Ploting</span></a>
+                <a href="{{ route('dekan.approval.index') }}"><i class="bi bi-clipboard-check"></i> Approval</a>
                 <a href="#"><i class="bi bi-file-earmark-text"></i> Laporan</a>
 
                 @elseif($role === 'wr1')
