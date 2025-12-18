@@ -3,96 +3,146 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Ploting;
-use App\Models\User;
-use App\Models\MataKuliah;
-use App\Models\Kelas;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
+use App\Models\Ploting;
+use App\Models\MataKuliah;
+use App\Models\User;
 
 class KaprodiPlotingController extends Controller
 {
+    /**
+     * =========================
+     * HALAMAN DAFTAR PLOTTING
+     * =========================
+     */
     public function index(Request $request)
     {
-        $query = Ploting::with(['dosen', 'matakuliah', 'kelas']);
+        // ambil semua dosen (untuk filter)
+        $dosens = User::where('role', 'dosen')
+            ->orderBy('name')
+            ->get();
 
-        if ($request->filled('semester')) {
-            $query->where('semester', $request->semester);
-        }
-        if ($request->filled('tahun_akademik')) {
-            $query->where('tahun_akademik', $request->tahun_akademik);
-        }
+        // ambil semua mata kuliah (karena tidak ada prodi_id)
+        $matakuliahs = MataKuliah::orderBy('kode_mk')->get();
+
+        // query ploting
+        $query = Ploting::with(['dosen', 'matakuliah'])
+            ->orderBy('created_at', 'desc');
+
+        // FILTER OPTIONAL
         if ($request->filled('dosen_id')) {
             $query->where('dosen_id', $request->dosen_id);
         }
+
         if ($request->filled('matakuliah_id')) {
             $query->where('matakuliah_id', $request->matakuliah_id);
         }
 
-        $plotings = $query->orderBy('created_at', 'desc')->paginate(25);
+        if ($request->filled('tahun_akademik')) {
+            $query->where('tahun_akademik', $request->tahun_akademik);
+        }
 
-        $dosens = User::where('role', 'dosen')->get();
-        $matakuliahs = class_exists(MataKuliah::class) ? MataKuliah::all() : collect();
+        $plotings = $query->paginate(10);
 
-        return view('kaprodi.ploting.index', compact('plotings', 'dosens', 'matakuliahs'));
+        return view('kaprodi.ploting.index', compact(
+            'plotings',
+            'dosens',
+            'matakuliahs'
+        ));
     }
 
+    /**
+     * =========================
+     * FORM TAMBAH PLOTTING
+     * =========================
+     */
     public function create()
     {
-        $dosens = User::where('role', 'dosen')->get();
-        $matakuliahs = class_exists(MataKuliah::class) ? MataKuliah::all() : collect();
-        $kelas = class_exists(Kelas::class) ? Kelas::all() : collect();
+        $matakuliahs = MataKuliah::orderBy('kode_mk')->get();
 
-        return view('kaprodi.ploting.create', compact('dosens', 'matakuliahs', 'kelas'));
+        $dosens = User::where('role', 'dosen')
+            ->orderBy('name')
+            ->get();
+
+        return view('kaprodi.ploting.create', compact(
+            'matakuliahs',
+            'dosens'
+        ));
     }
 
+    /**
+     * =========================
+     * SIMPAN PLOTTING (KIRIM KE DEKAN)
+     * =========================
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'dosen_id' => 'required|array',
-            'dosen_id.*' => ['required', 'integer', Rule::exists('users', 'id')],
-            'matakuliah_id' => 'required|integer',
-            'kelas_id' => 'nullable|integer',
-            'semester' => 'nullable|string',
-            'tahun_akademik' => 'nullable|string',
+            'matakuliah_id'  => 'required',
+            'dosen_id'       => 'required',
+            'kelas_id'       => 'required',
+            'semester'       => 'required',
+            'tahun_akademik' => 'required',
         ]);
 
-        $saved = 0;
-        foreach ($request->dosen_id as $dosenId) {
-            $exists = Ploting::where('dosen_id', $dosenId)
-                ->where('matakuliah_id', $request->matakuliah_id)
-                ->when($request->kelas_id, function ($q) use ($request) {
-                    return $q->where('kelas_id', $request->kelas_id);
-                })
-                ->when($request->semester, function ($q) use ($request) {
-                    return $q->where('semester', $request->semester);
-                })
-                ->when($request->tahun_akademik, function ($q) use ($request) {
-                    return $q->where('tahun_akademik', $request->tahun_akademik);
-                })
-                ->exists();
+        Ploting::create([
+            'matakuliah_id'  => $request->matakuliah_id,
+            'dosen_id'       => $request->dosen_id,
+            'kelas_id'       => $request->kelas_id,
+            'semester'       => $request->semester,
+            'tahun_akademik' => $request->tahun_akademik,
+            'created_by'     => Auth::id(),
+            'status'         => 'pending', // menunggu Dekan
+            'prodi_id'       => 1, // sementara HARDCODE biar aman
+        ]);
 
-            if ($exists) continue;
-
-            Ploting::create([
-                'dosen_id' => $dosenId,
-                'matakuliah_id' => $request->matakuliah_id,
-                'kelas_id' => $request->kelas_id,
-                'semester' => $request->semester,
-                'tahun_akademik' => $request->tahun_akademik,
-                'created_by' => Auth::id(),
-            ]);
-
-            $saved++;
-        }
-
-        return redirect()->route('kaprodi.ploting.index')
-            ->with('success', "{$saved} dosen berhasil diploting.");
+        return redirect()
+            ->route('ploting.index')
+            ->with('success', 'Ploting berhasil dikirim ke Dekan');
     }
 
-    public function destroy(Ploting $ploting)
+    /**
+     * =========================
+     * SIMPAN SEBAGAI DRAFT
+     * =========================
+     */
+    public function saveDraft(Request $request)
     {
+        $request->validate([
+            'matakuliah_id' => 'required',
+            'dosen_id'      => 'required',
+            'kelas_id'      => 'required',
+        ]);
+
+        Ploting::create([
+            'matakuliah_id' => $request->matakuliah_id,
+            'dosen_id'      => $request->dosen_id,
+            'kelas_id'      => $request->kelas_id,
+            'created_by'    => Auth::id(),
+            'status'        => 'draft',
+            'prodi_id'      => 1, // sementara
+        ]);
+
+        return response()->json([
+            'message' => 'Draft berhasil disimpan'
+        ]);
+    }
+
+    /**
+     * =========================
+     * HAPUS PLOTTING
+     * =========================
+     */
+    public function destroy($id)
+    {
+        $ploting = Ploting::findOrFail($id);
+
+        if (!in_array($ploting->status, ['draft', 'pending'])) {
+            return back()->with('error', 'Ploting tidak bisa dihapus');
+        }
+
         $ploting->delete();
-        return redirect()->route('kaprodi.ploting.index')->with('success', 'Ploting berhasil dihapus.');
+
+        return back()->with('success', 'Ploting berhasil dihapus');
     }
 }

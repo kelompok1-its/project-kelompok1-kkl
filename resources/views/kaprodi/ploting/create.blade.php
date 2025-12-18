@@ -2,59 +2,83 @@
 
 @section('content')
 <div class="card p-4">
-    <h4 class="fw-bold">Tambah Ploting Dosen</h4>
+    <h4 class="fw-bold mb-3">Tambah Ploting Dosen</h4>
 
-    @if($errors->any())
+    @if ($errors->any())
     <div class="alert alert-danger">
-        <ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
     </div>
     @endif
 
-    <form action="{{ route('kaprodi.ploting.store') }}" method="POST">
+    <form method="POST" action="{{ route('kaprodi.ploting.store') }}">
         @csrf
 
+        {{-- DOSEN --}}
         <div class="mb-3">
-            <label>Nama Mata Kuliah</label>
+            <label class="form-label">Dosen</label>
+            <select name="dosen_id" class="form-control" required>
+                <option value="">-- Pilih Dosen --</option>
+                @foreach($dosens as $d)
+                <option value="{{ $d->id }}">{{ $d->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- MATA KULIAH --}}
+        <div class="mb-3">
+            <label class="form-label">Mata Kuliah</label>
             <select name="matakuliah_id" class="form-control" required>
                 <option value="">-- Pilih Mata Kuliah --</option>
                 @foreach($matakuliahs as $m)
-                <option value="{{ $m->id }}">{{ $m->nama ?? $m->title ?? $m->nama_matakuliah }}</option>
+                <option value="{{ $m->id }}">
+                    {{ $m->kode_mk ?? '-' }} - {{ $m->nama_mk ?? $m->nama }}
+                </option>
                 @endforeach
             </select>
         </div>
 
+        {{-- KELAS --}}
         <div class="mb-3">
-            <label>Pilih Dosen (boleh pilih lebih dari 1)</label>
-            <select name="dosen_id[]" class="form-control" multiple size="8" required>
-                @foreach($dosens as $d)
-                <option value="{{ $d->id }}">{{ $d->name }} ({{ $d->email ?? '-' }})</option>
-                @endforeach
-            </select>
+            <label class="form-label">Kelas</label>
+            <input type="text"
+                name="kelas_id"
+                class="form-control"
+                placeholder="Contoh: A / B / A,B"
+                required>
         </div>
 
+        {{-- SEMESTER --}}
         <div class="mb-3">
-            <label>Kelas (opsional)</label>
-            <select name="kelas_id" class="form-control">
-                <option value="">-- Pilih Kelas --</option>
-                @foreach($kelas as $k)
-                <option value="{{ $k->id }}">{{ $k->nama ?? $k->kode ?? $k->id }}</option>
-                @endforeach
+            <label class="form-label">Semester</label>
+            <select name="semester" class="form-control" required>
+                <option value="">-- Pilih Semester --</option>
+                <option value="Ganjil">Ganjil</option>
+                <option value="Genap">Genap</option>
             </select>
         </div>
 
-        <div class="row g-2 mb-3">
-            <div class="col">
-                <label>Semester</label>
-                <input type="text" name="semester" class="form-control" placeholder="contoh: ganjil">
-            </div>
-            <div class="col">
-                <label>Tahun Akademik</label>
-                <input type="text" name="tahun_akademik" class="form-control" placeholder="contoh: 2024/2025">
-            </div>
+        {{-- TAHUN AKADEMIK --}}
+        <div class="mb-3">
+            <label class="form-label">Tahun Akademik</label>
+            <input type="text"
+                name="tahun_akademik"
+                class="form-control"
+                placeholder="Contoh: 2024/2025"
+                required>
         </div>
 
-        <button class="btn btn-success">Simpan Ploting</button>
-        <a href="{{ route('kaprodi.ploting.index') }}" class="btn btn-secondary">Batal</a>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+                Simpan & Kirim ke Dekan
+            </button>
+            <a href="{{ route('kaprodi.ploting.index') }}" class="btn btn-secondary">
+                Kembali
+            </a>
+        </div>
     </form>
 </div>
 @endsection

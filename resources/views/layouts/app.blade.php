@@ -268,7 +268,7 @@
                 @elseif($role === 'wr1')
                 {{-- Menu WR1 (Full Access SK) --}}
                 <a href="{{ route('sk_mengajar.index') }}"><i class="bi bi-pen"></i> Kelola SK</a>
-                <a href="#"><i class="bi bi-shield-check"></i> Final Approval</a>
+                <a href="{{ route('wr1.approval.index') }}"><i class="bi bi-shield-check"></i> Final Approval</a>
                 <a href="#"><i class="bi bi-file-earmark-pdf"></i> Publikasi</a>
 
                 @elseif($role === 'dosen')

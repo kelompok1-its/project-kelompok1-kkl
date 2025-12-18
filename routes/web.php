@@ -23,6 +23,9 @@ use App\Http\Controllers\DekanPlotingController;
 // Dekan Approval controller (Approval center)
 use App\Http\Controllers\DekanApprovalController;
 
+// WR1 final approval controller
+use App\Http\Controllers\Wr1ApprovalController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -81,22 +84,27 @@ Route::middleware(['auth'])->group(function () {
         ->name('role.switch.get');
 
     /* ======================
-       KAPRODI — PLOTTING DOSEN
-       views/kaprodi/ploting/*
-    ======================= */
-    Route::prefix('kaprodi/ploting')->group(function () {
-        Route::get('/', [KaprodiPlotingController::class, 'index'])
+   KAPRODI — PLOTTING DOSEN
+   views/kaprodi/ploting/*
+======================= */
+    Route::prefix('kaprodi')->group(function () {
+
+        Route::get('/ploting', [KaprodiPlotingController::class, 'index'])
             ->name('kaprodi.ploting.index');
 
-        Route::get('/create', [KaprodiPlotingController::class, 'create'])
+        Route::get('/ploting/create', [KaprodiPlotingController::class, 'create'])
             ->name('kaprodi.ploting.create');
 
-        Route::post('/store', [KaprodiPlotingController::class, 'store'])
+        Route::post('/ploting', [KaprodiPlotingController::class, 'store'])
             ->name('kaprodi.ploting.store');
 
-        Route::delete('/{ploting}', [KaprodiPlotingController::class, 'destroy'])
+        Route::post('/ploting/draft', [KaprodiPlotingController::class, 'saveDraft'])
+            ->name('kaprodi.ploting.draft');
+
+        Route::delete('/ploting/{id}', [KaprodiPlotingController::class, 'destroy'])
             ->name('kaprodi.ploting.destroy');
     });
+
 
     /* ======================
        DEKAN — VERIFIKASI PLOTTING
@@ -122,6 +130,24 @@ Route::middleware(['auth'])->group(function () {
     ======================= */
     Route::get('dekan/approval', [DekanApprovalController::class, 'index'])
         ->name('dekan.approval.index');
+
+    /* ======================
+       WR1 — FINAL APPROVAL
+       views/wr1/approval/*
+    ======================= */
+    Route::prefix('wr1/approval')->group(function () {
+        Route::get('/', [Wr1ApprovalController::class, 'index'])
+            ->name('wr1.approval.index');
+
+        Route::get('/{ploting}', [Wr1ApprovalController::class, 'show'])
+            ->name('wr1.approval.show');
+
+        Route::post('/{ploting}/approve', [Wr1ApprovalController::class, 'approve'])
+            ->name('wr1.approval.approve');
+
+        Route::post('/{ploting}/reject', [Wr1ApprovalController::class, 'reject'])
+            ->name('wr1.approval.reject');
+    });
 
     /* ======================
        KUISONER — KAPRODI
