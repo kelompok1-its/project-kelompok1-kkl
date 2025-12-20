@@ -131,7 +131,7 @@
                         @if(in_array($p->status, ['draft', 'pending']))
                         <form action="{{ route('kaprodi.ploting.destroy', $p->id) }}" method="POST">
 
-                            onsubmit="return confirm('Yakin hapus ploting ini?')">
+
                             @csrf
                             @method('DELETE')
                             <button class="btn btn-sm btn-danger">

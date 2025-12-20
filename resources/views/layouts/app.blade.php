@@ -257,6 +257,7 @@
                 @elseif($role === 'kaprodi')
                 <a href="{{ route('kaprodi.kuisioner.index') }}"><i class="bi bi-clipboard-check"></i> <span>Kuisioner</span></a>
                 <a href="{{ route('kaprodi.ploting.index') }}"><i class="bi bi-diagram-3"></i> <span>Ploting Dosen</span></a>
+                <a href="{{ route('kaprodi.ploting.revisi.index') }}"><i class="bi bi-arrow-repeat"></i> <span>Revisi Ploting</span></a> <!-- Menu baru -->
                 <a href="{{ route('matakuliah.index') }}"><i class="bi bi-book"></i> <span>Data MK</span></a>
 
                 @elseif($role === 'dekan')

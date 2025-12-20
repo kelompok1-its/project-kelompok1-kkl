@@ -10,34 +10,18 @@ use App\Models\User;
 
 class KaprodiPlotingController extends Controller
 {
-    /**
-     * =========================
-     * HALAMAN DAFTAR PLOTTING
-     * =========================
-     */
     public function index(Request $request)
     {
-        // ambil semua dosen (untuk filter)
-        $dosens = User::where('role', 'dosen')
-            ->orderBy('name')
-            ->get();
-
-        // ambil semua mata kuliah (karena tidak ada prodi_id)
+        $dosens = User::where('role', 'dosen')->orderBy('name')->get();
         $matakuliahs = MataKuliah::orderBy('kode_mk')->get();
+        $query = Ploting::with(['dosen', 'matakuliah'])->orderBy('created_at', 'desc');
 
-        // query ploting
-        $query = Ploting::with(['dosen', 'matakuliah'])
-            ->orderBy('created_at', 'desc');
-
-        // FILTER OPTIONAL
         if ($request->filled('dosen_id')) {
             $query->where('dosen_id', $request->dosen_id);
         }
-
         if ($request->filled('matakuliah_id')) {
             $query->where('matakuliah_id', $request->matakuliah_id);
         }
-
         if ($request->filled('tahun_akademik')) {
             $query->where('tahun_akademik', $request->tahun_akademik);
         }
@@ -51,61 +35,52 @@ class KaprodiPlotingController extends Controller
         ));
     }
 
-    /**
-     * =========================
-     * FORM TAMBAH PLOTTING
-     * =========================
-     */
     public function create()
     {
+        // Ambil semua mata kuliah
         $matakuliahs = MataKuliah::orderBy('kode_mk')->get();
 
+        // Ambil semua dosen
         $dosens = User::where('role', 'dosen')
             ->orderBy('name')
             ->get();
 
+        // Ambil data existing ploting dengan status 'draft', agar bisa ditampilkan untuk pre-fill
+        $existing = Ploting::where('status', 'draft')->get();
+
+        // Kirim data ke view
         return view('kaprodi.ploting.create', compact(
-            'matakuliahs',
-            'dosens'
+            'matakuliahs', // Data mata kuliah
+            'dosens',      // Data dosen
+            'existing'     // Data existing ploting dengan status draft
         ));
     }
 
-    /**
-     * =========================
-     * SIMPAN PLOTTING (KIRIM KE DEKAN)
-     * =========================
-     */
     public function store(Request $request)
     {
         $request->validate([
-            'matakuliah_id'  => 'required',
-            'dosen_id'       => 'required',
-            'kelas_id'       => 'required',
-            'semester'       => 'required',
-            'tahun_akademik' => 'required',
+            'plotings.*.matakuliah_id' => 'required|exists:matakuliahs,id',
+            'plotings.*.dosen_id'      => 'required|exists:users,id',
+            'plotings.*.kelas'         => 'required|string',
         ]);
 
-        Ploting::create([
-            'matakuliah_id'  => $request->matakuliah_id,
-            'dosen_id'       => $request->dosen_id,
-            'kelas_id'       => $request->kelas_id,
-            'semester'       => $request->semester,
-            'tahun_akademik' => $request->tahun_akademik,
-            'created_by'     => Auth::id(),
-            'status'         => 'pending', // menunggu Dekan
-            'prodi_id'       => 1, // sementara HARDCODE biar aman
-        ]);
+        foreach ($request->plotings as $ploting) {
+            // Simpan setiap entri plotting
+            Ploting::create([
+                'matakuliah_id'  => $ploting['matakuliah_id'],
+                'dosen_id'       => $ploting['dosen_id'],
+                'kelas_id'       => $ploting['kelas'], // Sesuaikan dengan field yang relevan
+                'semester'       => $request->semester ?? 'Ganjil', // Default jika tidak ada
+                'tahun_akademik' => $request->tahun_akademik ?? '2023/2024', // Default jika tidak ada
+                'created_by'     => Auth::id(),
+                'status'         => 'pending', // Status dikirim ke Dekan
+                'prodi_id'       => Auth::user()->prodi_id, // Sesuaikan dengan user
+            ]);
+        }
 
-        return redirect()
-            ->route('ploting.index')
-            ->with('success', 'Ploting berhasil dikirim ke Dekan');
+        return redirect()->route('kaprodi.ploting.index')->with('success', 'Ploting berhasil dikirim ke Dekan.');
     }
 
-    /**
-     * =========================
-     * SIMPAN SEBAGAI DRAFT
-     * =========================
-     */
     public function saveDraft(Request $request)
     {
         $request->validate([
@@ -120,7 +95,7 @@ class KaprodiPlotingController extends Controller
             'kelas_id'      => $request->kelas_id,
             'created_by'    => Auth::id(),
             'status'        => 'draft',
-            'prodi_id'      => 1, // sementara
+            'prodi_id'      => 1,
         ]);
 
         return response()->json([
@@ -128,11 +103,6 @@ class KaprodiPlotingController extends Controller
         ]);
     }
 
-    /**
-     * =========================
-     * HAPUS PLOTTING
-     * =========================
-     */
     public function destroy($id)
     {
         $ploting = Ploting::findOrFail($id);
@@ -144,5 +114,59 @@ class KaprodiPlotingController extends Controller
         $ploting->delete();
 
         return back()->with('success', 'Ploting berhasil dihapus');
+    }
+
+    /**
+     * =========================
+     * REVISI PLOTTING
+     * =========================
+     */
+
+    // Tampilkan daftar ploting yang butuh revisi
+    public function revisiIndex()
+    {
+        // Ambil semua ploting dengan status revisi
+        $plotings = Ploting::where('status', 'revisi')
+            ->with(['dosen', 'matakuliah'])
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        // Kirim ke view
+        return view('kaprodi.ploting.revisi.index', compact('plotings'));
+    }
+
+    // Tampilkan form revisi untuk ploting tertentu berdasarkan ID
+    public function revisiEdit($id)
+    {
+        $ploting = Ploting::findOrFail($id);
+
+        if ($ploting->status !== 'revisi') {
+            return redirect()->route('kaprodi.ploting.revisi.index')->with('error', 'Plotting ini tidak dapat direvisi.');
+        }
+
+        $dosens = User::where('role', 'dosen')->orderBy('name')->get();
+
+        return view('kaprodi.ploting.revisi.edit', compact('ploting', 'dosens'));
+    }
+
+    // Simpan hasil revisi ploting
+    public function revisiUpdate(Request $request, $id)
+    {
+        $request->validate([
+            'dosen_id' => 'required|exists:users,id',
+        ]);
+
+        $ploting = Ploting::findOrFail($id);
+
+        if ($ploting->status !== 'revisi') {
+            return redirect()->route('kaprodi.ploting.revisi.index')->with('error', 'Plotting ini tidak dapat direvisi.');
+        }
+
+        $ploting->update([
+            'dosen_id' => $request->dosen_id,
+            'status' => 'pending', // Status dikembalikan ke pending
+        ]);
+
+        return redirect()->route('kaprodi.ploting.revisi.index')->with('success', 'Ploting berhasil direvisi.');
     }
 }
