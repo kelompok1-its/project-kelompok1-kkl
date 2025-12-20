@@ -6,25 +6,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Ploting;
+use App\Models\SuratKeputusan;
 
 class Wr1ApprovalController extends Controller
 {
     public function __construct()
     {
-        // middleware inline: hanya user role 'wr1' atau session role 'wr1'
+        // Hanya role WR1 yang boleh akses
         $this->middleware(function ($request, $next) {
             $user = Auth::user();
-            $roleSlug = session('current_role_slug', null);
+            $roleSlug = session('current_role_slug');
 
-            $isWr1 = false;
-            if ($user && (isset($user->role) && $user->role === 'wr1')) {
-                $isWr1 = true;
-            }
-            if ($roleSlug === 'wr1') {
-                $isWr1 = true;
-            }
-
-            if (! $isWr1) {
+            if (
+                ! $user ||
+                ($user->role !== 'wr1' && $roleSlug !== 'wr1')
+            ) {
                 abort(403, 'Unauthorized.');
             }
 
@@ -33,84 +29,116 @@ class Wr1ApprovalController extends Controller
     }
 
     /**
-     * List plotings yang sudah disetujui Dekan (status = 'approved') dan menunggu WR1 (final_status IS NULL or 'pending').
+     * Daftar ploting yang:
+     * - sudah disetujui Dekan
+     * - belum final approval WR1
      */
     public function index(Request $request)
     {
-        // Pastikan kolom final_status ada
-        if (! Schema::hasColumn('plotings', 'final_status')) {
-            abort(500, 'Kolom final_status belum tersedia. Jalankan migration WR1.');
+        if (!Schema::hasColumn('plotings', 'final_status')) {
+            abort(500, 'Kolom final_status belum tersedia.');
         }
 
-        $query = Ploting::with(['dosen', 'matakuliah', 'kelas', 'prodi', 'approver'])
-            ->where('status', 'approved') // sudah disetujui Dekan
+        $plotings = Ploting::with(['dosen', 'matakuliah', 'kelas', 'prodi'])
+            ->where('status', 'approved') // approved oleh Dekan
             ->where(function ($q) {
-                $q->whereNull('final_status')->orWhere('final_status', 'pending');
-            });
-
-        // optional filter: fakultas/prodi jika perlu (WR1 biasanya lihat semua)
-        if ($request->filled('prodi_id')) {
-            $query->where('prodi_id', $request->prodi_id);
-        }
-
-        $plotings = $query->orderBy('created_at', 'desc')->paginate(20);
+                $q->whereNull('final_status')
+                  ->orWhere('final_status', 'pending');
+            })
+            ->orderByDesc('created_at')
+            ->paginate(20);
 
         return view('wr1.approval.index', compact('plotings'));
     }
 
     /**
-     * Show detail ploting
+     * Detail ploting
      */
     public function show(Ploting $ploting)
     {
-        $ploting->load(['dosen','matakuliah','kelas','prodi','approver','approverFinal']);
+        $ploting->load([
+            'dosen',
+            'matakuliah',
+            'kelas',
+            'prodi',
+            'approver',
+            'approverFinal'
+        ]);
+
         return view('wr1.approval.show', compact('ploting'));
     }
 
     /**
-     * Final approved by WR1
+     * FINAL APPROVAL WR1
+     * + AUTO CREATE SK
+     * + AUTO GENERATE PDF
      */
     public function approve(Request $request, Ploting $ploting)
     {
-        $this->validate($request, [
+        $request->validate([
             'final_remarks' => 'nullable|string|max:1000',
         ]);
 
         if ($ploting->final_status === 'approved') {
-            return redirect()->back()->with('info', 'Sudah final disetujui.');
+            return back()->with('info', 'Ploting sudah final disetujui.');
         }
 
-        $ploting->final_status = 'approved';
-        $ploting->final_by = Auth::id();
-        $ploting->final_at = now();
-        $ploting->final_remarks = $request->input('final_remarks');
-        // optional: set overall status untuk menandakan final approval
-        $ploting->status = 'final_approved';
-        $ploting->save();
+        /* ======================
+           FINAL APPROVAL WR1
+        ======================= */
+        $ploting->update([
+            'final_status'   => 'approved',
+            'final_by'       => Auth::id(),
+            'final_at'       => now(),
+            'final_remarks'  => $request->final_remarks,
+            'status'         => 'final_approved',
+        ]);
 
-        return redirect()->route('wr1.approval.index')->with('success', 'Ploting berhasil disetujui secara final.');
+        /* ======================
+           CREATE / GET SK
+        ======================= */
+        $sk = SuratKeputusan::firstOrCreate(
+            ['ploting_id' => $ploting->id],
+            [
+                'nomor_sk'      => 'SK-' . now()->format('Y') . '-' . str_pad($ploting->id, 4, '0', STR_PAD_LEFT),
+                'judul_sk'      => 'Surat Keputusan Mengajar',
+                'isi_sk'        => "Menetapkan dosen {$ploting->dosen->name} sebagai pengampu mata kuliah {$ploting->matakuliah->nama}.",
+                'tanggal_sk'    => now(),
+                'status_dekan'  => 'disetujui',
+                'status_warek1' => 'disetujui',
+                'nama_warek1'   => Auth::user()->name,
+                'nip_warek1'    => Auth::user()->nip ?? '-',
+            ]
+        );
+
+        /* ======================
+           REDIRECT GENERATE SK
+        ======================= */
+        return redirect()
+            ->route('sk.generate', $sk->id)
+            ->with('success', 'Ploting disetujui & SK berhasil dibuat.');
     }
 
     /**
-     * Final reject by WR1 — dikembalikan ke Dekan (atau ke Dekan sebagai review)
+     * FINAL REJECT WR1
+     * Dikembalikan ke Dekan
      */
     public function reject(Request $request, Ploting $ploting)
     {
-        $this->validate($request, [
+        $request->validate([
             'final_remarks' => 'required|string|max:1000',
         ]);
 
-        $ploting->final_status = 'rejected';
-        $ploting->final_by = Auth::id();
-        $ploting->final_at = now();
-        $ploting->final_remarks = $request->input('final_remarks');
+        $ploting->update([
+            'final_status'  => 'rejected',
+            'final_by'      => Auth::id(),
+            'final_at'      => now(),
+            'final_remarks' => $request->final_remarks,
+            'status'        => 'rejected_by_wr1',
+        ]);
 
-        // kembalikan status agar Dekan / Kaprodi bisa proses ulang; gunakan 'rejected_by_wr1' agar traceable
-        $ploting->status = 'rejected_by_wr1';
-        $ploting->save();
-
-        // (opsional) Notifikasi: kamu bisa mengirim notification ke Dekan/Kaprodi di sini
-
-        return redirect()->route('wr1.approval.index')->with('success', 'Ploting ditolak dan dikembalikan ke Dekan.');
+        return redirect()
+            ->route('wr1.approval.index')
+            ->with('success', 'Ploting ditolak dan dikembalikan ke Dekan.');
     }
 }

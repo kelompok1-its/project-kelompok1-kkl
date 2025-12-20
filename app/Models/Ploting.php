@@ -57,4 +57,16 @@ class Ploting extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'final_by');
     }
+
+    // SuratKeputusan.php
+    public function ploting()
+    {
+        return $this->belongsTo(Ploting::class);
+    }
+
+    // Ploting.php
+    public function suratKeputusan()
+    {
+        return $this->hasOne(SuratKeputusan::class);
+    }
 }
