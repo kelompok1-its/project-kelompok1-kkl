@@ -30,25 +30,36 @@
                 $existingRow = isset($existing) ? $existing->firstWhere('matakuliah_id', $m->id) : null;
                 @endphp
                 <tr data-matkul-id="{{ $m->id }}">
-                    <td><input type="checkbox" class="row-check"></td>
-                    <td>{{ $m->kode ?? '-' }}</td>
-                    <td>{{ $m->nama }}</td>
                     <td>
-                        <select name="plotings[{{ $loop->index }}][dosen_id]" class="form-select form-select-sm dosen-select">
+                        <input type="checkbox"
+                            class="row-check"
+                            name="plotings[{{ $loop->index }}][selected]"
+                            value="1">
+                    </td>
+
+                    <td>{{ $m->kode_mk }}</td>
+                    <td>{{ $m->nama_mk }}</td>
+                    <td>
+                        <select name="plotings[{{ $loop->index }}][dosen_id]"
+                            class="form-select form-select-sm dosen-select">
                             <option value="">-- pilih dosen --</option>
                             @foreach($dosens as $d)
-                            <option value="{{ $d->id }}" @if(optional($existingRow)->dosen_id == $d->id) selected @endif>
-                                {{ $d->name }}
-                            </option>
+                            <option value="{{ $d->id }}">{{ $d->name }}</option>
                             @endforeach
                         </select>
-                        <input type="hidden" name="plotings[{{ $loop->index }}][matakuliah_id]" value="{{ $m->id }}">
+
+                        <input type="hidden"
+                            name="plotings[{{ $loop->index }}][matakuliah_id]"
+                            value="{{ $m->id }}">
                     </td>
                     <td>
-                        <input type="text" name="plotings[{{ $loop->index }}][kelas]" class="form-control form-control-sm kelas-input"
-                            placeholder="A atau A,B" value="{{ optional($existingRow)->kelas_id ?? '' }}">
+                        <input type="text"
+                            name="plotings[{{ $loop->index }}][kelas]"
+                            class="form-control form-control-sm kelas-input"
+                            placeholder="Contoh: 5SA,3RB">
                     </td>
                 </tr>
+
                 @endforeach
             </tbody>
         </table>

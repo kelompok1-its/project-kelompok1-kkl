@@ -58,27 +58,51 @@ class KaprodiPlotingController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'plotings.*.matakuliah_id' => 'required|exists:matakuliahs,id',
-            'plotings.*.dosen_id'      => 'required|exists:users,id',
-            'plotings.*.kelas'         => 'required|string',
-        ]);
+        $user = auth()->user();
 
-        foreach ($request->plotings as $ploting) {
-            // Simpan setiap entri plotting
-            Ploting::create([
-                'matakuliah_id'  => $ploting['matakuliah_id'],
-                'dosen_id'       => $ploting['dosen_id'],
-                'kelas_id'       => $ploting['kelas'], // Sesuaikan dengan field yang relevan
-                'semester'       => $request->semester ?? 'Ganjil', // Default jika tidak ada
-                'tahun_akademik' => $request->tahun_akademik ?? '2023/2024', // Default jika tidak ada
-                'created_by'     => Auth::id(),
-                'status'         => 'pending', // Status dikirim ke Dekan
-                'prodi_id'       => Auth::user()->prodi_id, // Sesuaikan dengan user
-            ]);
+        if (!$request->has('plotings')) {
+            return back()->with('error', 'Tidak ada data ploting yang dikirim.');
         }
 
-        return redirect()->route('kaprodi.ploting.index')->with('success', 'Ploting berhasil dikirim ke Dekan.');
+        $count = 0;
+
+        foreach ($request->plotings as $row) {
+
+            // hanya proses baris yang dicentang
+            if (!isset($row['selected'])) {
+                continue;
+            }
+
+            // validasi minimal
+            if (
+                empty($row['matakuliah_id']) ||
+                empty($row['dosen_id']) ||
+                empty($row['kelas'])
+            ) {
+                continue;
+            }
+
+            Ploting::create([
+                'matakuliah_id'  => $row['matakuliah_id'],
+                'dosen_id'       => $row['dosen_id'],
+                'kelas_id'       => $row['kelas'], // STRING (5SA)
+                'semester'       => 'Genap',        // bisa kamu ganti
+                'tahun_akademik' => '2023',
+                'created_by'     => $user->id,
+                'prodi_id'       => $user->prodi_id ?? 1,
+                'status'         => 'pending', // ke DEKAN
+            ]);
+
+            $count++;
+        }
+
+        if ($count === 0) {
+            return back()->with('error', 'Tidak ada baris valid yang disubmit.');
+        }
+
+        return redirect()
+            ->route('kaprodi.ploting.index')
+            ->with('success', "$count ploting berhasil dikirim ke Dekan.");
     }
 
     public function saveDraft(Request $request)
