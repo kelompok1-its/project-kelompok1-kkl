@@ -16,6 +16,8 @@ use App\Http\Controllers\DekanPlotingController;
 use App\Http\Controllers\DekanApprovalController;
 use App\Http\Controllers\Wr1ApprovalController;
 use App\Http\Controllers\SKController;
+use App\Http\Controllers\DekanLaporanController;
+use App\Http\Controllers\Wr1LaporanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -115,6 +117,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('dekan/approval', [DekanApprovalController::class, 'index'])
         ->name('dekan.approval.index');
 
+
+    /* ======================
+   DEKAN — LAPORAN MONITORING
+====================== */
+    Route::get('/dekan/laporan', [DekanLaporanController::class, 'index'])
+        ->name('dekan.laporan.index');
+
+
     /* ======================
        WR1 — FINAL APPROVAL
     ====================== */
@@ -145,6 +155,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/download/{sk}', [SKController::class, 'generateSK'])
             ->name('sk.generate');
     });
+
+    /* ======================
+   WR1 — LAPORAN FINAL
+====================== */
+    Route::get('/wr1/laporan', [Wr1LaporanController::class, 'index'])
+        ->name('wr1.laporan.index');
+
 
     /* ======================
        KUISONER KAPRODI
