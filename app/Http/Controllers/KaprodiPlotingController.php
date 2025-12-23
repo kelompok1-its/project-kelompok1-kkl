@@ -155,8 +155,11 @@ class KaprodiPlotingController extends Controller
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        // Kirim ke view
-        return view('kaprodi.ploting.revisi.index', compact('plotings'));
+        // Ambil semua dosen sebagai opsi untuk penggantian
+        $dosens = User::where('role', 'dosen')->orderBy('name')->get();
+
+        // Kirimkan data ke view
+        return view('kaprodi.ploting.revisi.index', compact('plotings', 'dosens'));
     }
 
     // Tampilkan form revisi untuk ploting tertentu berdasarkan ID

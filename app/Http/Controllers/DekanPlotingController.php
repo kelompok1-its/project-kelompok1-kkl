@@ -91,12 +91,14 @@ class DekanPlotingController extends Controller
             'remarks' => 'required|string|max:1000',
         ]);
 
-        $ploting->status = 'rejected';
-        $ploting->approved_by = Auth::id();
-        $ploting->approved_at = now();
-        $ploting->remarks = $request->remarks;
-        $ploting->save();
+        // Ubah status menjadi revisi agar masuk ke menu revisi Kaprodi
+        $ploting->update([
+            'status' => 'revisi',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+            'catatan' => $request->remarks, // Simpan catatan dari Dekan
+        ]);
 
-        return redirect()->route('dekan.ploting.index')->with('success', 'Ploting ditolak dan dikembalikan ke Kaprodi.');
+        return redirect()->route('dekan.ploting.index')->with('success', 'Ploting ditolak dan dikirim ke Kaprodi untuk revisi.');
     }
 }

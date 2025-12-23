@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\MataKuliah;
+use App\Models\User;
+use App\Models\Ploting;
 
 class DashboardController extends Controller
 {
@@ -54,9 +57,17 @@ class DashboardController extends Controller
     private function commonData()
     {
         return [
-            'jumlah_mk' => \App\Models\MataKuliah::count(),
+            // UMUM (dipakai akademik)
+            'jumlah_mk'   => \App\Models\MataKuliah::count(),
             'kelas_aktif' => \App\Models\Kelas::count(),
-            'jumlah_sk' => \App\Models\SkMengajar::count(),
+            'jumlah_sk'   => \App\Models\SkMengajar::count(),
+
+            // KHUSUS PLOTTING (kaprodi)
+            'dosen_tersedia' => \App\Models\User::where('role', 'dosen')->count(),
+            'ploting_belum_selesai' => \App\Models\Ploting::where(function ($q) {
+                $q->where('status', 'pending')
+                    ->orWhereNull('final_status');
+            })->count(),
         ];
     }
 }

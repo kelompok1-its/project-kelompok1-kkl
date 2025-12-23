@@ -55,7 +55,8 @@ class KaprodiKuisionerController extends Controller
     // Lihat hasil kuisioner (opsional filter by judul ?judul=...)
     public function hasil(Request $request)
     {
-        $query = PertanyaanKuisioner::with('jawaban');
+        // eager load jawaban dan relasi dosen (jika relasi dosen ada di model JawabanKuisioner)
+        $query = PertanyaanKuisioner::with(['jawaban.dosen']);
 
         if ($request->filled('judul')) {
             $query->where('judul', $request->judul);
@@ -63,6 +64,9 @@ class KaprodiKuisionerController extends Controller
 
         $hasil = $query->get();
 
-        return view('kaprodi.kuisioner.hasil', compact('hasil'));
+        // daftar judul untuk dropdown filter
+        $juduls = PertanyaanKuisioner::select('judul')->distinct()->orderBy('judul')->pluck('judul');
+
+        return view('kaprodi.kuisioner.hasil', compact('hasil', 'juduls'));
     }
 }
