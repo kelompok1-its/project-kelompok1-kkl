@@ -4,31 +4,32 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\MataKuliah;
-use App\Models\User;
-use App\Models\Ploting;
+use App\Models\Kelas;
+use App\Models\SkMengajar;
 
 class DashboardController extends Controller
 {
     /**
-     * Index: jika ada session role -> redirect ke dashboard.role
-     * jika tidak ada -> tampilkan dashboard umum
+     * Dashboard utama
+     * Jika sudah ada role di session → redirect ke dashboard sesuai role
      */
     public function index()
     {
-        $role = session('current_role_slug', null);
+        $role = session('current_role_slug');
 
         if ($role) {
-            // redirect ke route dashboard.role misal /dashboard/akademik
             return redirect()->route('dashboard.role', ['role' => $role]);
         }
 
-        $data = $this->commonData();
-        return view('dashboard.index', $data);
+        return view('dashboard.index', $this->commonData());
     }
 
+    /**
+     * Dashboard berdasarkan role
+     */
     public function showByRole(Request $request, $role)
     {
-        $allowed = [
+        $roles = [
             'akademik' => 'Akademik',
             'kaprodi'  => 'Kaprodi',
             'dekan'    => 'Dekan',
@@ -37,37 +38,42 @@ class DashboardController extends Controller
         ];
 
         $role = strtolower($role);
-        if (! array_key_exists($role, $allowed)) abort(404);
+
+        if (!isset($roles[$role])) {
+            abort(404);
+        }
 
         session([
-            'current_role' => $allowed[$role],
+            'current_role' => $roles[$role],
             'current_role_slug' => $role,
         ]);
 
         $data = $this->commonData();
-        $data['current_role_slug'] = $role;
-        $data['current_role_label'] = $allowed[$role];
+        $data['current_role_slug']  = $role;
+        $data['current_role_label'] = $roles[$role];
 
-        $viewName = "{$role}.dashboard";
-        if (! view()->exists($viewName)) $viewName = 'dashboard.index';
+        $view = "{$role}.dashboard";
+        if (!view()->exists($view)) {
+            $view = 'dashboard.index';
+        }
 
-        return view($viewName, $data);
+        return view($view, $data);
     }
 
+    /**
+     * Data umum dashboard (AMAN – tanpa status)
+     */
     private function commonData()
     {
         return [
-            // UMUM (dipakai akademik)
-            'jumlah_mk'   => \App\Models\MataKuliah::count(),
-            'kelas_aktif' => \App\Models\Kelas::count(),
-            'jumlah_sk'   => \App\Models\SkMengajar::count(),
+            // total mata kuliah
+            'jumlah_mk' => MataKuliah::count(),
 
-            // KHUSUS PLOTTING (kaprodi)
-            'dosen_tersedia' => \App\Models\User::where('role', 'dosen')->count(),
-            'ploting_belum_selesai' => \App\Models\Ploting::where(function ($q) {
-                $q->where('status', 'pending')
-                    ->orWhereNull('final_status');
-            })->count(),
+            // total kelas
+            'kelas_aktif' => Kelas::count(),
+
+            // total SK mengajar
+            'jumlah_sk' => SkMengajar::count(),
         ];
     }
 }
