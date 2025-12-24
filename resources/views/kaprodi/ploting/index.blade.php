@@ -2,36 +2,19 @@
 
 @section('content')
 <div class="card p-4">
-
-    {{-- HEADER --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="fw-bold mb-0">Ploting Dosen</h4>
-        <a href="{{ route('kaprodi.ploting.create') }}" class="btn btn-success">
-            Tambah Ploting
-        </a>
-
+        <h4 class="fw-bold">Ploting Dosen</h4>
+        <a href="{{ route('kaprodi.ploting.create') }}" class="btn btn-success">Tambah Ploting</a>
     </div>
 
-    {{-- ALERT --}}
-    @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
-    {{-- FILTER --}}
-    <form method="GET" class="mb-3">
-        <div class="row g-2 align-items-end">
-
+    <!-- Filter -->
+    <form method="GET" action="{{ route('kaprodi.ploting.index') }}" class="mb-4">
+        <div class="row g-2">
             <div class="col-md-3">
-                <label class="form-label">Dosen</label>
-                <select name="dosen_id" class="form-control">
+                <select name="dosen_id" class="form-select">
                     <option value="">Semua Dosen</option>
                     @foreach($dosens as $d)
-                    <option value="{{ $d->id }}"
-                        {{ request('dosen_id') == $d->id ? 'selected' : '' }}>
+                    <option value="{{ $d->id }}" {{ request('dosen_id') == $d->id ? 'selected' : '' }}>
                         {{ $d->name }}
                     </option>
                     @endforeach
@@ -39,126 +22,163 @@
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Mata Kuliah</label>
-                <select name="matakuliah_id" class="form-control">
+                <select name="matakuliah_id" class="form-select">
                     <option value="">Semua Mata Kuliah</option>
                     @foreach($matakuliahs as $m)
-                    <option value="{{ $m->id }}"
-                        {{ request('matakuliah_id') == $m->id ? 'selected' : '' }}>
-                        {{ $m->kode_mk }} - {{ $m->nama_mk }}
+                    <option value="{{ $m->id }}" {{ request('matakuliah_id') == $m->id ? 'selected' : '' }}>
+                        {{ $m->kode_mk ?? $m->nama ?? $m->id }}
                     </option>
                     @endforeach
                 </select>
             </div>
 
             <div class="col-md-3">
-                <label class="form-label">Tahun Akademik</label>
-                <input type="text"
-                    name="tahun_akademik"
-                    class="form-control"
-                    placeholder="contoh: 2024/2025"
+                <input type="text" name="tahun_akademik" class="form-control" placeholder="contoh: 2024/2025"
                     value="{{ request('tahun_akademik') }}">
             </div>
 
-            <div class="col-md-3">
-                <button class="btn btn-primary w-100">
-                    Filter
-                </button>
+            <div class="col-md-3 d-flex gap-2">
+                <button class="btn btn-primary">Filter</button>
+                <a href="{{ route('kaprodi.ploting.index') }}" class="btn btn-secondary">Reset</a>
             </div>
-
         </div>
     </form>
 
-    {{-- TABLE --}}
+    <!-- Alerts -->
+    @if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+    <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    <!-- Table -->
     <div class="table-responsive">
-        <table class="table table-bordered table-striped align-middle">
+        <table class="table table-bordered align-middle">
             <thead class="table-light">
-                <tr class="text-center">
-                    <th>#</th>
+                <tr>
+                    <th style="width:40px;">#</th>
                     <th>Dosen</th>
                     <th>Mata Kuliah</th>
                     <th>Kelas</th>
                     <th>Semester</th>
                     <th>Tahun Akademik</th>
                     <th>Status</th>
-                    <th width="120">Aksi</th>
+                    <th style="width:180px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-
-                @forelse($plotings as $p)
+                @forelse($plotings as $i => $ploting)
+                @php
+                if (!empty($ploting->final_status)) {
+                if ($ploting->final_status === 'rejected' || $ploting->final_status === 'ditolak') {
+                $badgeText = 'Ditolak WR1';
+                $badgeClass = 'danger';
+                } elseif ($ploting->final_status === 'approved') {
+                $badgeText = 'Disetujui WR1';
+                $badgeClass = 'success';
+                } else {
+                $badgeText = ucfirst($ploting->final_status);
+                $badgeClass = 'secondary';
+                }
+                } else {
+                switch ($ploting->status) {
+                case 'pending':
+                $badgeText = 'Pending';
+                $badgeClass = 'warning';
+                break;
+                case 'approved':
+                case 'disetujui_dekan':
+                $badgeText = 'Disetujui';
+                $badgeClass = 'success';
+                break;
+                case 'revisi':
+                $badgeText = 'Revisi Kaprodi';
+                $badgeClass = 'info';
+                break;
+                case 'draft':
+                $badgeText = 'Draft';
+                $badgeClass = 'secondary';
+                break;
+                default:
+                $badgeText = ucfirst($ploting->status ?? 'Unknown');
+                $badgeClass = 'secondary';
+                }
+                }
+                @endphp
                 <tr>
-                    <td class="text-center">
-                        {{ $loop->iteration + ($plotings->currentPage() - 1) * $plotings->perPage() }}
+                    <td>{{ $plotings->firstItem() + $i }}</td>
+                    <td>{{ optional($ploting->dosen)->name ?? '—' }}</td>
+                    <td>
+                        <strong>{{ optional($ploting->matakuliah)->kode_mk ?? '-' }}</strong><br>
+                        <small class="text-muted">{{ optional($ploting->matakuliah)->nama ?? '-' }}</small>
                     </td>
 
-                    <td>{{ $p->dosen->name ?? '-' }}</td>
+                    <!-- KELAS: prioritas tampilkan relasi kelas->nama, lalu kolom kelas (string), lalu kelas_id -->
+                    <td>
+                        @if(optional($ploting->kelas)->nama)
+                        {{ $ploting->kelas->nama }}
+                        @elseif(!empty($ploting->kelas))
+                        {{ $ploting->kelas }}
+                        @elseif(!empty($ploting->kelas_id))
+                        {{-- tampilkan nama relasi jika tersedia, atau id sebagai fallback --}}
+                        {{ optional($ploting->kelas)->nama ?? $ploting->kelas_id }}
+                        @else
+                        -
+                        @endif
+                    </td>
+
+                    <td>{{ $ploting->semester ?? '-' }}</td>
+                    <td>{{ $ploting->tahun_akademik ?? '-' }}</td>
+                    <td><span class="badge bg-{{ $badgeClass }}">{{ $badgeText }}</span></td>
 
                     <td>
-                        {{ $p->matakuliah->kode_mk ?? '-' }} <br>
-                        <small class="text-muted">
-                            {{ $p->matakuliah->nama_mk ?? '-' }}
-                        </small>
-                    </td>
+                        <div class="d-flex gap-2">
+                            {{-- Tombol Hapus untuk draft/pending --}}
+                            @if(in_array($ploting->status, ['draft','pending']))
+                            <form action="{{ route('kaprodi.ploting.destroy', $ploting->id) }}" method="POST" onsubmit="return confirm('Hapus ploting ini?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
+                            </form>
+                            @endif
 
-                    <td class="text-center">
-                        {{ $p->kelas_id ?? '-' }}
-                    </td>
+                            {{-- Jika ploting status = revisi atau final_status = rejected: tampilkan Revisi + Hapus --}}
+                            @if($ploting->status === 'revisi' || in_array($ploting->final_status, ['rejected','ditolak']))
+                            <a href="{{ route('kaprodi.ploting.revisi.index') }}" class="btn btn-sm btn-outline-primary">Revisi</a>
 
-                    <td class="text-center">
-                        {{ $p->semester ?? '-' }}
-                    </td>
+                            {{-- Hapus juga muncul untuk opsi penghapusan revisi/ditolak --}}
+                            <form action="{{ route('kaprodi.ploting.destroy', $ploting->id) }}" method="POST" onsubmit="return confirm('Hapus ploting yang ditolak/revisi ini?')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="btn btn-sm btn-outline-danger" type="submit">Hapus</button>
+                            </form>
+                            @endif
 
-                    <td class="text-center">
-                        {{ $p->tahun_akademik ?? '-' }}
-                    </td>
-
-                    <td class="text-center">
-                        @if($p->status == 'draft')
-                        <span class="badge bg-secondary">Draft</span>
-                        @elseif($p->status == 'pending')
-                        <span class="badge bg-warning text-dark">Pending</span>
-                        @elseif($p->status == 'approved')
-                        <span class="badge bg-success">Disetujui</span>
-                        @elseif($p->status == 'rejected')
-                        <span class="badge bg-danger">Ditolak</span>
-                        @else
-                        <span class="badge bg-light text-dark">-</span>
-                        @endif
-                    </td>
-
-                    <td class="text-center">
-                        @if(in_array($p->status, ['draft', 'pending']))
-                        <form action="{{ route('kaprodi.ploting.destroy', $p->id) }}" method="POST">
-
-
-                            @csrf
-                            @method('DELETE')
-                            <button class="btn btn-sm btn-danger">
-                                Hapus
-                            </button>
-                        </form>
-                        @else
-                        <span class="text-muted">-</span>
-                        @endif
+                            {{-- Detail jika ada --}}
+                            @if (Route::has('kaprodi.ploting.show'))
+                            <a href="{{ route('kaprodi.ploting.show', $ploting->id) }}" class="btn btn-sm btn-outline-secondary">Detail</a>
+                            @endif
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="text-center text-muted">
-                        Belum ada data ploting
-                    </td>
+                    <td colspan="8" class="text-center text-muted">Tidak ada data ploting.</td>
                 </tr>
                 @endforelse
-
             </tbody>
         </table>
     </div>
 
-    {{-- PAGINATION --}}
-    <div class="mt-3">
-        {{ $plotings->withQueryString()->links() }}
+    <!-- Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            Menampilkan {{ $plotings->firstItem() ?? 0 }} - {{ $plotings->lastItem() ?? 0 }} dari {{ $plotings->total() }} entri
+        </div>
+        <div>
+            {{ $plotings->withQueryString()->links() }}
+        </div>
     </div>
-
 </div>
 @endsection

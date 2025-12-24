@@ -264,7 +264,9 @@
                 {{-- Menu Dekan --}}
                 <a href="{{ route('dekan.ploting.index') }}"><i class="bi bi-check-circle"></i> <span>Verifikasi Ploting</span></a>
                 <a href="{{ route('dekan.approval.index') }}"><i class="bi bi-clipboard-check"></i> Approval</a>
-                <a href="#"><i class="bi bi-file-earmark-text"></i> Laporan</a>
+                <a href="{{ route('dekan.laporan.index') }}"><i class="bi bi-file-earmark-text"></i> Laporan</a>
+
+
 
                 @elseif($role === 'wr1')
                 {{-- Menu WR1 --}}
@@ -274,6 +276,10 @@
 
                 <a href="{{ route('wr1.approval.index') }}">
                     <i class="bi bi-shield-check"></i> Final Approval
+                </a>
+
+                <a href="{{ route('wr1.laporan.index') }}">
+                    <i class="bi bi-file-earmark-text"></i> Laporan
                 </a>
 
                 <a href="#">

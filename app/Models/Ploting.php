@@ -16,11 +16,12 @@ class Ploting extends Model
         'semester',
         'tahun_akademik',
         'created_by',
+
         'status',
         'approved_by',
         'approved_at',
         'remarks',
-        // WR1 final approval fields
+
         'final_status',
         'final_by',
         'final_at',
@@ -29,42 +30,34 @@ class Ploting extends Model
 
     public function dosen()
     {
-        return $this->belongsTo(\App\Models\User::class, 'dosen_id');
+        return $this->belongsTo(User::class, 'dosen_id');
     }
 
     public function matakuliah()
     {
-        return $this->belongsTo(\App\Models\MataKuliah::class, 'matakuliah_id');
+        return $this->belongsTo(MataKuliah::class, 'matakuliah_id');
     }
 
     public function kelas()
     {
-        return $this->belongsTo(\App\Models\Kelas::class, 'kelas_id');
+        return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
     public function prodi()
     {
-        return $this->belongsTo(\App\Models\Prodi::class, 'prodi_id');
+        return $this->belongsTo(Prodi::class, 'prodi_id');
     }
 
     public function approver()
     {
-        return $this->belongsTo(\App\Models\User::class, 'approved_by');
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
-    // relasi untuk final approver (WR1)
     public function approverFinal()
     {
-        return $this->belongsTo(\App\Models\User::class, 'final_by');
+        return $this->belongsTo(User::class, 'final_by');
     }
 
-    // SuratKeputusan.php
-    public function ploting()
-    {
-        return $this->belongsTo(Ploting::class);
-    }
-
-    // Ploting.php
     public function suratKeputusan()
     {
         return $this->hasOne(SuratKeputusan::class);

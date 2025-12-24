@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Ploting;
 use App\Models\MataKuliah;
 use App\Models\User;
+use App\Models\Kelas;
 
 class KaprodiPlotingController extends Controller
 {
@@ -14,7 +15,9 @@ class KaprodiPlotingController extends Controller
     {
         $dosens = User::where('role', 'dosen')->orderBy('name')->get();
         $matakuliahs = MataKuliah::orderBy('kode_mk')->get();
-        $query = Ploting::with(['dosen', 'matakuliah'])->orderBy('created_at', 'desc');
+
+        // Eager-load relasi termasuk kelas supaya nama kelas bisa ditampilkan tanpa N+1
+        $query = Ploting::with(['dosen', 'matakuliah', 'kelas'])->orderBy('created_at', 'desc');
 
         if ($request->filled('dosen_id')) {
             $query->where('dosen_id', $request->dosen_id);
@@ -37,22 +40,19 @@ class KaprodiPlotingController extends Controller
 
     public function create()
     {
-        // Ambil semua mata kuliah
         $matakuliahs = MataKuliah::orderBy('kode_mk')->get();
-
-        // Ambil semua dosen
-        $dosens = User::where('role', 'dosen')
-            ->orderBy('name')
-            ->get();
+        $dosens = User::where('role', 'dosen')->orderBy('name')->get();
+        // Ambil daftar kelas untuk form (jika ingin ubah ke select)
+        $kelasList = Kelas::orderBy('nama')->get();
 
         // Ambil data existing ploting dengan status 'draft', agar bisa ditampilkan untuk pre-fill
         $existing = Ploting::where('status', 'draft')->get();
 
-        // Kirim data ke view
         return view('kaprodi.ploting.create', compact(
-            'matakuliahs', // Data mata kuliah
-            'dosens',      // Data dosen
-            'existing'     // Data existing ploting dengan status draft
+            'matakuliahs',
+            'dosens',
+            'existing',
+            'kelasList'
         ));
     }
 
@@ -68,12 +68,10 @@ class KaprodiPlotingController extends Controller
 
         foreach ($request->plotings as $row) {
 
-            // hanya proses baris yang dicentang
             if (!isset($row['selected'])) {
                 continue;
             }
 
-            // validasi minimal
             if (
                 empty($row['matakuliah_id']) ||
                 empty($row['dosen_id']) ||
@@ -82,22 +80,31 @@ class KaprodiPlotingController extends Controller
                 continue;
             }
 
+            // Catatan: form lama mungkin mengirim kelas sebagai string (mis. "5SA") atau sebagai id.
+            // Jika nilai numeric dianggap id kelas, simpan ke kelas_id; kalau tidak, simpan ke kolom kelas (string)
+            $kelasId = null;
+            $kelasString = null;
+
+            if (is_numeric($row['kelas'])) {
+                $kelasId = intval($row['kelas']);
+            } else {
+                $kelasString = $row['kelas'];
+            }
+
             Ploting::create([
                 'matakuliah_id'  => $row['matakuliah_id'],
                 'dosen_id'       => $row['dosen_id'],
-                'kelas_id'       => $row['kelas'], // STRING (5SA)
-                'semester'       => 'Genap',        // bisa kamu ganti
+                // Simpan preferensi: jika ada kelas_id simpan ke kelas_id, else simpan string ke kolom kelas
+                'kelas_id'       => $kelasId,
+                'kelas'          => $kelasString,
+                'semester'       => 'Genap',
                 'tahun_akademik' => '2023',
                 'created_by'     => $user->id,
                 'prodi_id'       => $user->prodi_id ?? 1,
-                'status'         => 'pending', // ke DEKAN
+                'status'         => 'pending',
             ]);
 
             $count++;
-        }
-
-        if ($count === 0) {
-            return back()->with('error', 'Tidak ada baris valid yang disubmit.');
         }
 
         return redirect()
@@ -131,8 +138,13 @@ class KaprodiPlotingController extends Controller
     {
         $ploting = Ploting::findOrFail($id);
 
-        if (!in_array($ploting->status, ['draft', 'pending'])) {
-            return back()->with('error', 'Ploting tidak bisa dihapus');
+        // Izinkan penghapusan ketika masih draft/pending,
+        // atau ketika sedang direvisi (status = 'revisi') atau WR1 sudah menolak (final_status = 'rejected')
+        $canDelete = in_array($ploting->status, ['draft', 'pending', 'revisi']) ||
+            in_array($ploting->final_status, ['rejected', 'ditolak']);
+
+        if (! $canDelete) {
+            return back()->with('error', 'Ploting tidak bisa dihapus.');
         }
 
         $ploting->delete();
@@ -149,25 +161,25 @@ class KaprodiPlotingController extends Controller
     // Tampilkan daftar ploting yang butuh revisi
     public function revisiIndex()
     {
-        // Ambil semua ploting dengan status revisi
-        $plotings = Ploting::where('status', 'revisi')
-            ->with(['dosen', 'matakuliah'])
+        $plotings = Ploting::where(function ($q) {
+            $q->where('status', 'revisi')
+                ->orWhere('final_status', 'rejected')
+                ->orWhere('final_status', 'ditolak');
+        })
+            ->with(['dosen', 'matakuliah', 'kelas'])
             ->orderBy('updated_at', 'desc')
             ->get();
 
-        // Ambil semua dosen sebagai opsi untuk penggantian
         $dosens = User::where('role', 'dosen')->orderBy('name')->get();
 
-        // Kirimkan data ke view
         return view('kaprodi.ploting.revisi.index', compact('plotings', 'dosens'));
     }
 
-    // Tampilkan form revisi untuk ploting tertentu berdasarkan ID
     public function revisiEdit($id)
     {
         $ploting = Ploting::findOrFail($id);
 
-        if ($ploting->status !== 'revisi') {
+        if ($ploting->status !== 'revisi' && $ploting->final_status !== 'rejected' && $ploting->final_status !== 'ditolak') {
             return redirect()->route('kaprodi.ploting.revisi.index')->with('error', 'Plotting ini tidak dapat direvisi.');
         }
 
@@ -176,7 +188,6 @@ class KaprodiPlotingController extends Controller
         return view('kaprodi.ploting.revisi.edit', compact('ploting', 'dosens'));
     }
 
-    // Simpan hasil revisi ploting
     public function revisiUpdate(Request $request, $id)
     {
         $request->validate([
@@ -185,13 +196,15 @@ class KaprodiPlotingController extends Controller
 
         $ploting = Ploting::findOrFail($id);
 
-        if ($ploting->status !== 'revisi') {
+        if ($ploting->status !== 'revisi' && $ploting->final_status !== 'rejected' && $ploting->final_status !== 'ditolak') {
             return redirect()->route('kaprodi.ploting.revisi.index')->with('error', 'Plotting ini tidak dapat direvisi.');
         }
 
         $ploting->update([
             'dosen_id' => $request->dosen_id,
             'status' => 'pending', // Status dikembalikan ke pending
+            'final_status' => null, // reset final_status setelah direvisi
+            'final_remarks' => null,
         ]);
 
         return redirect()->route('kaprodi.ploting.revisi.index')->with('success', 'Ploting berhasil direvisi.');
