@@ -9,30 +9,30 @@
     <!-- Statistik (tiga kartu) -->
     <div class="stats-row" aria-hidden="false">
 
-        <div class="stat-card" role="region" aria-label="Jumlah Mata Kuliah">
-            <h3>Jumlah Mata Kuliah</h3>
+        <div class="stat-card" role="region" aria-label="Ploting Final">
+            <h3>Ploting Final</h3>
             <p>{{ $jumlah_mk }}</p>
         </div>
 
-        <div class="stat-card" role="region" aria-label="Dosen Tersedia">
-            <h3>Dosen Tersedia</h3>
+        <div class="stat-card" role="region" aria-label="SK untuk Ditandatangani">
+            <h3>SK untuk Ditandatangani</h3>
             <p>{{ $kelas_aktif }}</p>
         </div>
 
-        <div class="stat-card" role="region" aria-label="Ploting Belum Selesai">
-            <h3>Ploting Belum Selesai</h3>
+        <div class="stat-card" role="region" aria-label="Status Publikasi">
+            <h3>Status Publikasi</h3>
             <p>{{ $jumlah_sk }}</p>
         </div>
 
     </div>
 
-    <!-- Notifikasi / Aktivitas Kaprodi -->
+    <!-- Notifikasi / Aktivitas WR1 -->
     <div class="notif-box" style="margin-top:26px;">
-        <h3>Tindakan Cepat</h3>
+        <h3>Tindakan WR1</h3>
         <ul style="margin:10px 0 0 18px; color:#374151;">
-            <li>📋 Buat & kirim kuisioner ke dosen</li>
-            <li>📌 Lakukan ploting dosen</li>
-            <li>🔁 Revisi ploting yang ditolak Dekan / WR1</li>
+            <li>✍️ Tanda tangan SK</li>
+            <li>🔐 Finalisasi ploting dosen</li>
+            <li>📣 Publikasi SK</li>
         </ul>
     </div>
 </div>
