@@ -5,7 +5,7 @@
     <h4 class="mb-3">Generate Surat Keputusan (WR1)</h4>
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
     <div class="table-responsive">
@@ -22,27 +22,28 @@
             </thead>
             <tbody>
                 @forelse($plotings as $p)
-                    <tr>
-                        <td>{{ $loop->iteration }}</td>
-                        <td>{{ $p->prodi->nama ?? '-' }}</td>
-                        <td>{{ $p->matakuliah->nama ?? '-' }}</td>
-                        <td>{{ $p->dosen->name ?? '-' }}</td>
-                        <td>{{ $p->kelas->nama ?? '-' }}</td>
-                        <td>
-                            <form action="{{ route('wr1.sk.store', $p->id) }}" method="POST">
-                                @csrf
-                                <button class="btn btn-sm btn-primary">
-                                    Generate SK
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
+                <tr>
+                    <td>{{ $loop->iteration }}</td>
+                    <td>{{ $p->prodi->nama ?? '-' }}</td>
+                    <td>{{ $p->matakuliah->nama_mk ?? '-' }}</td>
+                    <td>{{ $p->dosen->name ?? '-' }}</td>
+                    <td>{{ $p->kelas_id ?? '-' }}</td>
+
+                    <td>
+                        <form action="{{ route('wr1.sk.store', $p->id) }}" method="POST">
+                            @csrf
+                            <button class="btn btn-sm btn-primary">
+                                Generate SK
+                            </button>
+                        </form>
+                    </td>
+                </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">
-                            Tidak ada data siap dibuat SK
-                        </td>
-                    </tr>
+                <tr>
+                    <td colspan="6" class="text-center text-muted">
+                        Tidak ada data siap dibuat SK
+                    </td>
+                </tr>
                 @endforelse
             </tbody>
         </table>

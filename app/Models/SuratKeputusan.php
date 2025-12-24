@@ -2,24 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class SuratKeputusan extends Model
 {
-    use HasFactory;
-
     protected $table = 'surat_keputusan';
 
     protected $fillable = [
+        'ploting_id',
         'nomor_sk',
-        'judul_sk',
-        'isi_sk',
-        'tanggal_sk',
         'status_dekan',
         'status_warek1',
-        'nama_dekan',
-        'nama_warek1',
-        'nip_warek1'
+        'tanggal_sk',
+        'file_path',
+        'created_by',
     ];
+
+    public function ploting()
+    {
+        return $this->belongsTo(Ploting::class, 'ploting_id');
+    }
 }

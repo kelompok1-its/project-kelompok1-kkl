@@ -278,6 +278,8 @@
                     <i class="bi bi-shield-check"></i> Final Approval
                 </a>
 
+                <a href="{{ route('wr1.sk.list') }}"><i class="bi bi-file-earmark-text"></i> Hasil SK</a>
+
                 <a href="{{ route('wr1.laporan.index') }}">
                     <i class="bi bi-file-earmark-text"></i> Laporan
                 </a>
@@ -290,7 +292,7 @@
                 @elseif($role === 'dosen')
                 {{-- Menu Dosen --}}
                 <a href="{{ route('dosen.kuisioner.index') }}"><i class="bi bi-card-checklist"></i> Isi Kuisioner</a>
-                <a href="#"><i class="bi bi-calendar-check"></i> Jadwal Mengajar</a>
+                <!-- <a href="#"><i class="bi bi-calendar-check"></i> Jadwal Mengajar</a> -->
                 <a href="{{ route('sk_mengajar.index') }}"><i class="bi bi-file-earmark-pdf"></i> SK Saya</a>
 
                 @endif

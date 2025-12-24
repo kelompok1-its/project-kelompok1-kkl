@@ -56,7 +56,8 @@ Route::middleware(['auth'])->group(function () {
     ====================== */
     Route::resource('matakuliah', MataKuliahController::class);
     Route::resource('kelas', KelasController::class);
-    Route::resource('sk_mengajar', SkMengajarController::class);
+    Route::resource('sk_mengajar', SkMengajarController::class)->only(['index', 'show', 'destroy']);
+    Route::get('sk_mengajar/{id}/download', [SkMengajarController::class, 'download'])->name('sk_mengajar.download');
 
     /* ======================
        ROLE SWITCHER
@@ -154,6 +155,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/download/{sk}', [SKController::class, 'generateSK'])
             ->name('sk.generate');
+
+        // Route untuk daftar SK yang sudah dibuat (WR1 view)
+        Route::get('/list', [SKController::class, 'list'])->name('wr1.sk.list');
     });
 
     /* ======================

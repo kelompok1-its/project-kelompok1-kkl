@@ -2,81 +2,89 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SkMengajar;
+use App\Models\SuratKeputusan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class SkMengajarController extends Controller
 {
-    private $basePath = 'akademik.sk_mengajar.';
-
-    public function index()
+    /**
+     * Tampilkan daftar SK (dilihat oleh Akademik & Dosen).
+     */
+    public function index(Request $request)
     {
-        $sk_mengajar = SkMengajar::latest()->get();
-        $jumlah_sk = SkMengajar::count();
+        // Optional: filter berdasarkan prodi, tahun, atau dosen
+        $query = SuratKeputusan::with(['ploting.matakuliah', 'ploting.dosen', 'ploting.kelas'])
+            ->orderByDesc('created_at');
 
-        return view($this->basePath . 'index', compact('sk_mengajar', 'jumlah_sk'));
+        if ($request->filled('prodi_id')) {
+            $query->whereHas('ploting', function ($q) use ($request) {
+                $q->where('prodi_id', $request->prodi_id);
+            });
+        }
+
+        if ($request->filled('dosen_id')) {
+            $query->whereHas('ploting', function ($q) use ($request) {
+                $q->where('dosen_id', $request->dosen_id);
+            });
+        }
+
+        $sks = $query->paginate(15);
+
+        return view('akademik.sk_mengajar.index', compact('sks'));
     }
 
-    public function create()
+    /**
+     * Tampilkan detail SK / atau langsung download PDF.
+     */
+    public function show($id)
     {
-        return view($this->basePath . 'create');
+        $sk = SuratKeputusan::with(['ploting.matakuliah', 'ploting.dosen', 'ploting.kelas'])->findOrFail($id);
+
+        // Jika ingin menampilkan halaman detail:
+        return view('akademik.sk_mengajar.show', compact('sk'));
+
+        // Atau langsung download PDF:
+        // return $this->downloadPdf($sk);
     }
 
-    public function store(Request $request)
+    /**
+     * Download PDF SK (dipanggil dari tombol Download).
+     */
+    public function download($id)
     {
-        $request->validate([
-            'nomor_sk' => 'required|unique:sk_mengajar',
-            'tahun_akademik' => 'required',
-            'semester' => 'required',
-            'tanggal_terbit' => 'required|date',
-            'dosen_nama' => 'required',
-            'mata_kuliah' => 'required',
-            'kelas' => 'required',
-            'sks' => 'required|numeric',
-            'status' => 'required'
-        ]);
+        $sk = SuratKeputusan::with(['ploting.matakuliah', 'ploting.dosen', 'ploting.kelas'])->findOrFail($id);
 
-        SkMengajar::create($request->all());
-
-        return redirect()->route('sk_mengajar.index')
-            ->with('success', 'SK Mengajar berhasil ditambahkan!');
+        try {
+            $pdf = Pdf::loadView('wr1.generate-sk.template', compact('sk'))->setPaper('a4', 'portrait');
+            return $pdf->download('SK_' . $sk->nomor_sk . '.pdf');
+        } catch (\Throwable $e) {
+            Log::error('SkMengajarController@download error', ['error' => $e->getMessage(), 'sk_id' => $id]);
+            return redirect()->back()->with('error', 'Gagal mendownload SK: ' . $e->getMessage());
+        }
     }
 
-    public function show(SkMengajar $skMengajar)
+    /**
+     * Hapus SK — hanya untuk user Akademik (atau sesuai kebijakan).
+     */
+    public function destroy($id)
     {
-        return view($this->basePath . 'show', compact('skMengajar'));
-    }
+        $sk = SuratKeputusan::findOrFail($id);
 
-    public function edit(SkMengajar $skMengajar)
-    {
-        return view($this->basePath . 'edit', compact('skMengajar'));
-    }
+        // Cek peran: izinkan hanya Akademik (sesuaikan dengan implementasi role Anda)
+        $role = session('current_role_slug', Auth::user()->role ?? null);
+        if ($role !== 'akademik') {
+            return redirect()->back()->with('error', 'Anda tidak berwenang menghapus SK.');
+        }
 
-    public function update(Request $request, SkMengajar $skMengajar)
-    {
-        $request->validate([
-            'nomor_sk' => 'required|unique:sk_mengajar,nomor_sk,' . $skMengajar->id,
-            'tahun_akademik' => 'required',
-            'semester' => 'required',
-            'tanggal_terbit' => 'required|date',
-            'dosen_nama' => 'required',
-            'mata_kuliah' => 'required',
-            'kelas' => 'required',
-            'sks' => 'required|numeric',
-            'status' => 'required'
-        ]);
-
-        $skMengajar->update($request->all());
-
-        return redirect()->route('sk_mengajar.index')
-            ->with('success', 'SK Mengajar berhasil diperbarui!');
-    }
-
-    public function destroy(SkMengajar $skMengajar)
-    {
-        $skMengajar->delete();
-
-        return redirect()->route('sk_mengajar.index')
-            ->with('success', 'SK Mengajar berhasil dihapus!');
+        try {
+            $sk->delete();
+            return redirect()->route('sk_mengajar.index')->with('success', 'SK berhasil dihapus.');
+        } catch (\Throwable $e) {
+            Log::error('SkMengajarController@destroy error', ['error' => $e->getMessage(), 'sk_id' => $id]);
+            return redirect()->back()->with('error', 'Gagal menghapus SK: ' . $e->getMessage());
+        }
     }
 }
